@@ -5,6 +5,39 @@
       <h2 class="main-title">科研业绩统计</h2>
       <el-divider></el-divider>
     </div>
+    <el-card class="year-export-card" style="margin-bottom: 20px;">
+      <div class="year-export-content">
+        <div>
+          <h3 class="year-export-title">年度全部导出</h3>
+          <div class="year-export-desc">按选择年份导出全部科研数据，不受部门和用户筛选影响。</div>
+        </div>
+        <div class="year-export-actions">
+          <el-select
+            v-model="yearAllForm.year"
+            placeholder="请选择年份"
+            style="width: 140px;"
+          >
+            <el-option
+              v-for="year in years"
+              :key="year"
+              :label="year"
+              :value="year"
+            ></el-option>
+          </el-select>
+          <el-checkbox v-model="yearAllIncludePdf">包含PDF附件</el-checkbox>
+          <el-button
+            type="warning"
+            icon="Download"
+            :loading="exportLoading"
+            @click="handleExportYearAll"
+          >
+            导出该年度全部数据
+          </el-button>
+        </div>
+      </div>
+    </el-card>
+
+    <el-card class="statistics-content-card">
     <!-- 筛选条件区域 -->
     <el-card class="filter-card" style="margin-bottom: 20px;">
       <div class="filter-header">
@@ -90,10 +123,25 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="筛选导出">
+              <el-checkbox v-model="filteredIncludePdf">包含PDF附件</el-checkbox>
+              <el-button
+                type="success"
+                icon="Download"
+                :loading="exportLoading"
+                style="margin-left: 12px;"
+                @click="handleExportFiltered"
+              >
+                按当前筛选条件导出
+              </el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
     </el-card>
 
-    <!-- 年度工作量汇总卡片 -->
     <el-card class="module-card annual-workload-card">
       <div class="module-header" style="margin-bottom: 15px;">
         <div style="display: flex; align-items: center; gap: 15px;">
@@ -916,6 +964,8 @@
       </div>
     </el-card>
 
+    </el-card>
+
     <!-- 新增：通用新增弹窗 -->
     <el-dialog 
         :title="dialogTitle" 
@@ -1370,6 +1420,7 @@
 </template>
 
 <script>
+import { ElLoading } from 'element-plus';
 import { getSubjectList, addSubject, deleteSubject, updateSubject  } from '@/api/researchPerformance/subject.js';
 import { getPaperList, addPaper, deletePaper, updatePaper  } from '@/api/researchPerformance/paper.js';
 import { getMonographList, addMonograph, deleteMonograph, updateMonograph  } from '@/api/researchPerformance/monograph.js';
@@ -1381,6 +1432,8 @@ import { getCookie } from '@/utils/cookie.js';
 import { getResearchTotalWorkload, saveYearWorkload } from '@/api/researchPerformance/totalWorkload.js'; // 根据实际路径调整
 import { parse } from '@vue/compiler-sfc';
 import { getUserListByDept } from '@/api/check/researchCheck.js';
+import { saveAs } from 'file-saver';
+import { exportResearchStatistics } from '@/api/statistics/export.js';
 
 
 export default {
@@ -1555,6 +1608,9 @@ export default {
         deptId: '',
         userId: ''
       },
+      yearAllForm: {
+        year: (new Date().getFullYear() - 1).toString()
+      },
       // 部门列表
       deptList: [
         { deptId: 0, deptName: '全部部门' },
@@ -1569,6 +1625,9 @@ export default {
       userLoading: false,
       // 搜索加载状态
       searchLoading: false,
+      exportLoading: false,
+      filteredIncludePdf: false,
+      yearAllIncludePdf: false,
 
     };
   },
@@ -2536,7 +2595,58 @@ export default {
     // }
   },
 
+  async handleExportFiltered() {
+    if (!this.filterForm.year) {
+      this.$message.warning('请选择年份');
+      return;
+    }
+    if (this.filterForm.deptId === undefined || this.filterForm.deptId === null || this.filterForm.deptId === '') {
+      this.$message.warning('请选择部门');
+      return;
+    }
+    await this.downloadStatisticsExport({
+      scope: 'FILTERED',
+      year: this.filterForm.year,
+      deptId: this.filterForm.deptId,
+      userId: this.filterForm.userId || 'all',
+      includePdf: this.filteredIncludePdf
+    });
+  },
 
+  async handleExportYearAll() {
+    if (!this.yearAllForm.year) {
+      this.$message.warning('请选择年份');
+      return;
+    }
+    await this.downloadStatisticsExport({
+      scope: 'YEAR_ALL',
+      year: this.yearAllForm.year,
+      includePdf: this.yearAllIncludePdf
+    });
+  },
+
+  async downloadStatisticsExport(payload) {
+    this.exportLoading = true;
+    const loadingInstance = ElLoading.service({
+      lock: true,
+      text: payload.includePdf ? '正在导出数据并打包PDF，请稍候...' : '正在导出数据，请稍候...',
+      background: 'rgba(0, 0, 0, 0.7)'
+    });
+    try {
+      const data = await exportResearchStatistics(payload);
+      const ext = payload.includePdf ? 'zip' : 'xlsx';
+      const type = payload.includePdf
+        ? 'application/zip'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      saveAs(new Blob([data], { type }), `科研统计_${payload.year}.${ext}`);
+      this.$message.success('导出完成');
+    } catch (error) {
+      this.$message.error('导出失败');
+    } finally {
+      loadingInstance.close();
+      this.exportLoading = false;
+    }
+  }
 
   }
 };
@@ -2880,11 +2990,52 @@ export default {
   border-top: 3px solid #67c23a;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
+.statistics-content-card {
+  margin-bottom: 20px;
+  border-top: 3px solid #409eff;
+}
 
 .filter-header {
   padding: 12px 20px;
   background-color: #f0f9eb;
   border-bottom: 1px solid #e1f3d8;
+}
+.year-export-card {
+  border-top: 3px solid #e6a23c;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.year-export-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.year-export-title {
+  font-size: 16px;
+  color: #2c3e50;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+.year-export-desc {
+  font-size: 13px;
+  color: #606266;
+}
+.year-export-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .year-export-content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .year-export-actions {
+    justify-content: flex-start;
+  }
 }
 
 </style>
