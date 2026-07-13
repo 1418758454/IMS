@@ -8,6 +8,8 @@ import com.ruoyi.manage.domain.BasicInformation;
 import com.ruoyi.manage.domain.teaching.ExperimentCourse;
 import com.ruoyi.manage.service.BasicInformationService;
 import com.ruoyi.manage.service.teaching.ExperimentCourseService;
+import com.ruoyi.manage.utils.AdminAuditUpdateUtils;
+import com.ruoyi.manage.service.teaching.TeachingTaskScreenshotAttachmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +31,8 @@ public class ExperimentCourseController {
     private ExperimentCourseService experimentCourseService; // 注入实验课Service
     @Autowired
     private BasicInformationService basicInformationService;
+    @Autowired
+    private TeachingTaskScreenshotAttachmentService taskScreenshotAttachmentService;
 
 
     /**
@@ -75,6 +79,9 @@ public class ExperimentCourseController {
     @PostMapping("/add")
     public AjaxResult addExperimentCourse(@RequestBody ExperimentCourse course) {
         String userId = SecurityUtils.getUsername();
+        if (!taskScreenshotAttachmentService.hasAttachment(Long.valueOf(userId), course.getYear(), "experiment")) {
+            return AjaxResult.error("请先上传个人教学任务截图（PDF）后再新增课程");
+        }
         String userName = basicInformationService.getByloginId(userId).getName();
         course.setUserId(Long.valueOf(userId));
         course.setUserName(userName);
@@ -118,7 +125,8 @@ public class ExperimentCourseController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
-    public AjaxResult updateExperimentCourse(@RequestBody ExperimentCourse course) {
+    public AjaxResult updateExperimentCourse(@RequestBody ExperimentCourse course,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
         course.setUserId(Long.valueOf(userId)); // 设置当前用户ID
         // 计算工作量（复用理论课计算逻辑，保持一致）
@@ -129,6 +137,7 @@ public class ExperimentCourseController {
         // 将审核状态修改为待审核
         course.setStatus("待审核");
 
+        AdminAuditUpdateUtils.preserve(experimentCourseService.getById(course.getId()), course, auditEdit);
         boolean success = experimentCourseService.updateById(course); // todo
         if (success) {
             // 更新成功，更新当前用户的实验课模块的所有工作量

@@ -106,7 +106,8 @@ public class EducationReformPaperController {
      * 3. 更新教改论文（更新年份提取逻辑，与科技创新一致）
      */
     @PutMapping("/update")
-    public AjaxResult updateEducationReformPaper(@RequestBody EducationReformPaper paper) {
+    public AjaxResult updateEducationReformPaper(@RequestBody EducationReformPaper paper,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         if (StringUtils.isEmpty(paper.getPdfUrl())) {
             return AjaxResult.error("\u8bf7\u4e0a\u4f20PDF\u8bc1\u660e\u6750\u6599");
         }
@@ -125,6 +126,7 @@ public class EducationReformPaperController {
         // 将审核状态修改为待审核
         paper.setStatus("待审核");
 
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(educationReformPaperService.getById(paper.getId()), paper, auditEdit);
         boolean success = educationReformPaperService.updateById(paper);
         if (success) {
             // 年份变更时需更新新旧两个年度的总工作量（与科技创新总表逻辑一致）

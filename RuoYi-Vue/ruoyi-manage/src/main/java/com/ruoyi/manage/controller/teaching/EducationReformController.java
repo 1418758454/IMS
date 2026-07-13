@@ -97,7 +97,8 @@ public class EducationReformController {
 
     // 3. 更新项目（直接保存前端工作量，调整年份提取逻辑）
     @PutMapping("/update")
-    public AjaxResult updateEducationReform(@RequestBody EducationReform reform) {
+    public AjaxResult updateEducationReform(@RequestBody EducationReform reform,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         if (StringUtils.isEmpty(reform.getPdfUrl())) {
             return AjaxResult.error("\u8bf7\u4e0a\u4f20PDF\u8bc1\u660e\u6750\u6599");
         }
@@ -114,6 +115,7 @@ public class EducationReformController {
         // 将审核状态修改为待审核
         reform.setStatus("待审核");
 
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(educationReformService.getById(reform.getId()), reform, auditEdit);
         boolean success = educationReformService.updateById(reform);
         if (success) {
             // 年份变更时，更新原年份和新年份的总工作量

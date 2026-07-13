@@ -119,7 +119,8 @@ public class ThesisCourseController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
-    public AjaxResult updateThesisCourse(@RequestBody ThesisCourse course) {
+    public AjaxResult updateThesisCourse(@RequestBody ThesisCourse course,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
         course.setUserId(Long.valueOf(userId)); // 设置当前用户ID
         // 计算工作量（复用实验课计算逻辑框架，调整参数）
@@ -130,6 +131,7 @@ public class ThesisCourseController {
         // 将审核状态修改为待审核
         course.setStatus("待审核");
 
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(thesisCourseService.getById(course.getId()), course, auditEdit);
         boolean success = thesisCourseService.updateById(course);
         if (success) {
             // 更新成功，更新当前用户的毕业论文模块的总工作量

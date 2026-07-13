@@ -79,7 +79,8 @@ public class GraduateGuideStudentController {
 
     // 3. 更新指导记录（直接保存前端工作量，无需日期提取年份）
     @PutMapping("/update")
-    public AjaxResult updateGraduateGuideStudent(@RequestBody GraduateGuideStudent guideStudent) {
+    public AjaxResult updateGraduateGuideStudent(@RequestBody GraduateGuideStudent guideStudent,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
         guideStudent.setUserId(Long.valueOf(userId));
         guideStudent.setUpdateTime(LocalDateTime.now());
@@ -88,6 +89,7 @@ public class GraduateGuideStudentController {
         // 将审核状态修改为待审核
         guideStudent.setStatus("待审核");
 
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(graduateGuideStudentService.getById(guideStudent.getId()), guideStudent, auditEdit);
         boolean success = graduateGuideStudentService.updateById(guideStudent);
 
         if (success) {

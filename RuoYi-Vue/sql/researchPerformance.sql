@@ -131,7 +131,7 @@ CREATE TABLE `research_software` (
                                      `authorize_time` DATE COMMENT '授权时间（可选）',
                                      `year` VARCHAR(50) NOT NULL COMMENT '年份（如：2023）',
                                      `rank` DECIMAL(5,2) NOT NULL COMMENT '排名',
-                                     `coefficient` DECIMAL(5,2) NOT NULL COMMENT '系数（1.0/0.8/0.5等）',
+                                     `coefficient` DECIMAL(5,2) NOT NULL DEFAULT 2.00 COMMENT '系数（当前默认2.0）',
                                      `pdf_url` VARCHAR(500) COMMENT 'PDF文件URL（可选）',
                                      `workload` DECIMAL(10,2) NOT NULL COMMENT '工作量',
                                      `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

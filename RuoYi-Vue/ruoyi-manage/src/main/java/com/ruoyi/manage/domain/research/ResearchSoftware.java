@@ -47,6 +47,9 @@ public class ResearchSoftware {
     @TableField("`rank`")
     private BigDecimal rank;
 
+    /** 该记录实际采用的软著系数 */
+    private BigDecimal coefficient;
+
     /** PDF文件URL（前端：pdfUrl） */
     private String pdfUrl;
 

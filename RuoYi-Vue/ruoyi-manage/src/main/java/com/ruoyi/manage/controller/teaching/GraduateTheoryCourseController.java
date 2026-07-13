@@ -8,6 +8,8 @@ import com.ruoyi.manage.domain.BasicInformation;
 import com.ruoyi.manage.domain.teaching.GraduateTheoryCourse;
 import com.ruoyi.manage.service.BasicInformationService;
 import com.ruoyi.manage.service.teaching.GraduateTheoryCourseService;
+import com.ruoyi.manage.service.teaching.TeachingTaskScreenshotAttachmentService;
+import com.ruoyi.manage.utils.AdminAuditUpdateUtils;
 import org.apache.ibatis.annotations.DeleteProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +32,8 @@ public class GraduateTheoryCourseController {
     private GraduateTheoryCourseService graduateTheoryCourseService; // 注入研究生理论课Service
     @Autowired
     private BasicInformationService basicInformationService;
+    @Autowired
+    private TeachingTaskScreenshotAttachmentService taskScreenshotAttachmentService;
 
     /**
      * 1. 获取研究生理论课列表（分页+条件查询）
@@ -75,6 +79,9 @@ public class GraduateTheoryCourseController {
     @PostMapping("/add")
     public AjaxResult addGraduateTheoryCourse(@RequestBody GraduateTheoryCourse course) {
         String userId = SecurityUtils.getUsername();
+        if (!taskScreenshotAttachmentService.hasAttachment(Long.valueOf(userId), course.getYear(), "graduate_theory")) {
+            return AjaxResult.error("请先上传个人教学任务截图（PDF）后再新增课程");
+        }
         String userName = basicInformationService.getByloginId(userId).getName();
         course.setUserId(Long.valueOf(userId));
         course.setUserName(userName);
@@ -115,9 +122,11 @@ public class GraduateTheoryCourseController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
-    public AjaxResult updateGraduateTheoryCourse(@RequestBody GraduateTheoryCourse course) {
+    public AjaxResult updateGraduateTheoryCourse(@RequestBody GraduateTheoryCourse course,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
         course.setUserId(Long.valueOf(userId));
+        AdminAuditUpdateUtils.preserve(graduateTheoryCourseService.getById(course.getId()), course, auditEdit);
         double workload = graduateTheoryCourseService.countWorkload(course.getUserId(), course);
         course.setWorkload(BigDecimal.valueOf(workload));
 
@@ -125,6 +134,7 @@ public class GraduateTheoryCourseController {
         // 将审核状态修改为待审核
         course.setStatus("待审核");
 
+        AdminAuditUpdateUtils.preserve(graduateTheoryCourseService.getById(course.getId()), course, auditEdit);
         boolean success = graduateTheoryCourseService.updateById(course);
         if (success) {
             graduateTheoryCourseService.countTotalWorkload(course.getUserId(), course.getYear());

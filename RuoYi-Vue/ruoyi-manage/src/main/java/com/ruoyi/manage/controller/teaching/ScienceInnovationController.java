@@ -130,7 +130,8 @@ public class ScienceInnovationController {
      * @return 更新结果
      */
     @PutMapping("/update")
-    public AjaxResult updateScienceInnovation(@RequestBody ScienceInnovation innovation) {
+    public AjaxResult updateScienceInnovation(@RequestBody ScienceInnovation innovation,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         if (StringUtils.isEmpty(innovation.getPdfUrl())) {
             return AjaxResult.error("\u8bf7\u4e0a\u4f20PDF\u8bc1\u660e\u6750\u6599");
         }
@@ -153,6 +154,7 @@ public class ScienceInnovationController {
         innovation.setStatus("待审核");
 
         // 4. 执行数据库更新
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(scienceInnovationService.getById(innovation.getId()), innovation, auditEdit);
         boolean success = scienceInnovationService.updateById(innovation);
 
         if (success) {

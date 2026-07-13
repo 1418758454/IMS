@@ -106,6 +106,39 @@ public class BasicInformation {
     private LocalDate undergradTime;
 
     /**
+     * 硕士毕业学校
+     */
+    @TableField("master_school")
+    private String masterSchool;
+
+    /**
+     * 硕士毕业时间
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @TableField(value = "master_time", updateStrategy = FieldStrategy.IGNORED)
+    private LocalDate masterTime;
+
+    /**
+     * 博士毕业学校
+     */
+    @TableField("doctor_school")
+    private String doctorSchool;
+
+    /**
+     * 博士毕业时间
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @TableField(value = "doctor_time", updateStrategy = FieldStrategy.IGNORED)
+    private LocalDate doctorTime;
+
+    /**
+     * 博士后经历
+     */
+    @Length(max = 500, message = "博士后经历不能超过500字符")
+    @TableField("postdoctoral_experience")
+    private String postdoctoralExperience;
+
+    /**
      * 最高学历
      */
     @TableField("highest_education")

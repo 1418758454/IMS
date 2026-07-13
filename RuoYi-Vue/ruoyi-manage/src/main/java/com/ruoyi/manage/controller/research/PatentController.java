@@ -115,7 +115,8 @@ public class PatentController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
-    public AjaxResult updatePatent(@RequestBody ResearchPatent patent) {
+    public AjaxResult updatePatent(@RequestBody ResearchPatent patent,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
         patent.setUserId(Long.valueOf(userId));
         patent.setUpdateTime(LocalDateTime.now());
@@ -140,10 +141,15 @@ public class PatentController {
         // 4. 执行数据库更新
 //        boolean success = patentService.updateById(patent);
         boolean success = false;
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(patentService.getById(patent.getId()), patent, auditEdit);
         if(patentService.updateById(patent)){
             // 计算模块总工作量
             patentService.countTotalConfirmedWorkload(patent.getUserId(), patent.getYear());
             patentService.countTotalEstimatedWorkload(patent.getUserId(), patent.getYear());
+            if (yearChanged) {
+                patentService.countTotalConfirmedWorkload(patent.getUserId(), String.valueOf(originalYear));
+                patentService.countTotalEstimatedWorkload(patent.getUserId(), String.valueOf(originalYear));
+            }
             success = true;
         }
 

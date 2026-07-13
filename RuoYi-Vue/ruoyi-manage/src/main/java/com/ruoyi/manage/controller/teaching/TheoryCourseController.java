@@ -9,7 +9,9 @@ import com.ruoyi.manage.domain.research.ResearchSoftware;
 import com.ruoyi.manage.domain.research.ResearchSubject;
 import com.ruoyi.manage.domain.teaching.UndergraduateTheoryCourse;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.teaching.TeachingTaskScreenshotAttachmentService;
 import com.ruoyi.manage.service.teaching.TheoryCourseService;
+import com.ruoyi.manage.utils.AdminAuditUpdateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +33,8 @@ public class TheoryCourseController {
     private TheoryCourseService theoryCourseService; // 注入理论课Service
     @Autowired
     private BasicInformationService basicInformationService;
+    @Autowired
+    private TeachingTaskScreenshotAttachmentService taskScreenshotAttachmentService;
 
 
     /**
@@ -80,6 +84,9 @@ public class TheoryCourseController {
     @PostMapping("/add")
     public AjaxResult addTheoryCourse(@RequestBody UndergraduateTheoryCourse course) {
         String userId = SecurityUtils.getUsername();
+        if (!taskScreenshotAttachmentService.hasAttachment(Long.valueOf(userId), course.getYear(), "theory")) {
+            return AjaxResult.error("请先上传个人教学任务截图（PDF）后再新增课程");
+        }
         String userName = basicInformationService.getByloginId(userId).getName();
         course.setUserId(Long.valueOf(userId));
         course.setUserName(userName);
@@ -125,9 +132,11 @@ public class TheoryCourseController {
      * @return 新增结果（成功/失败）
      */
     @PutMapping("/update")
-    public AjaxResult updateTheoryCourse(@RequestBody UndergraduateTheoryCourse course) {
+    public AjaxResult updateTheoryCourse(@RequestBody UndergraduateTheoryCourse course,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
         course.setUserId(Long.valueOf(userId)); // 设置当前用户ID
+        AdminAuditUpdateUtils.preserve(theoryCourseService.getById(course.getId()), course, auditEdit);
         // 计算工作量
         double workload = theoryCourseService.countWorkload(course.getUserId(),course);
         course.setWorkload(BigDecimal.valueOf(workload));
@@ -136,6 +145,7 @@ public class TheoryCourseController {
         // 将审核状态修改为待审核
         course.setStatus("待审核");
 
+        AdminAuditUpdateUtils.preserve(theoryCourseService.getById(course.getId()), course, auditEdit);
         boolean success = theoryCourseService.updateById(course);
         if (success) {
             // 更新成功，更新当前用户的理论课模块的所有工作量

@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/manage/research/software") // 软著模块接口根路径
 public class SoftwareController {
 
+    private static final BigDecimal DEFAULT_SOFTWARE_COEFFICIENT = new BigDecimal("2.00");
+
     @Autowired
     private SoftwareService softwareService; // 注入软著Service
 
@@ -78,7 +80,8 @@ public class SoftwareController {
         String userName = basicInformationService.getByloginId(userId).getName();
         software.setUserId(Long.valueOf(userId)); // 设置创建人ID
         software.setUserName(userName);
-        software.setWorkload(software.getRank().multiply(BigDecimal.valueOf(2.0))); // 软著工作量计算（示例值）
+        software.setCoefficient(DEFAULT_SOFTWARE_COEFFICIENT);
+        software.setWorkload(software.getRank().multiply(software.getCoefficient()));
 
         // 审计字段默认值（若前端未传递）
         software.setCreateTime(software.getCreateTime() == null ? LocalDateTime.now() : software.getCreateTime());
@@ -116,14 +119,21 @@ public class SoftwareController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
-    public AjaxResult updateSoftware(@RequestBody ResearchSoftware software) {
+    public AjaxResult updateSoftware(@RequestBody ResearchSoftware software,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
         software.setUserId(Long.valueOf(userId));
         software.setUpdateTime(LocalDateTime.now());
 
+        ResearchSoftware originalSoftware = softwareService.getById(software.getId());
+        BigDecimal coefficient = originalSoftware != null && originalSoftware.getCoefficient() != null
+                ? originalSoftware.getCoefficient()
+                : DEFAULT_SOFTWARE_COEFFICIENT;
+        software.setCoefficient(coefficient);
+
         // 1. 重新计算工作量
         BigDecimal rank = software.getRank();
-        BigDecimal workload = rank.multiply(BigDecimal.valueOf(2.0)); // 软著固定系数为2.0
+        BigDecimal workload = rank.multiply(coefficient);
         software.setWorkload(workload);
 
         // 2. 保存原始年份（关键：用于后续旧年份总工作量更新）
@@ -140,10 +150,15 @@ public class SoftwareController {
         // 4. 执行数据库更新
 //        boolean success = softwareService.updateById(software);
         boolean success = false;
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalSoftware, software, auditEdit);
         if(softwareService.updateById(software)){
             // 计算模块总工作量
             softwareService.countTotalConfirmedWorkload(software.getUserId(), software.getYear());
             softwareService.countTotalEstimatedWorkload(software.getUserId(), software.getYear());
+            if (yearChanged) {
+                softwareService.countTotalConfirmedWorkload(software.getUserId(), String.valueOf(originalYear));
+                softwareService.countTotalEstimatedWorkload(software.getUserId(), String.valueOf(originalYear));
+            }
             success = true;
         }
 

@@ -117,7 +117,8 @@ public class MonographController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
-    public AjaxResult updateMonograph(@RequestBody ResearchMonograph monograph) {
+    public AjaxResult updateMonograph(@RequestBody ResearchMonograph monograph,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
         monograph.setUserId(Long.valueOf(userId));
         monograph.setUpdateTime(LocalDateTime.now());
@@ -142,10 +143,15 @@ public class MonographController {
         // 4. 执行数据库更新
 //        boolean success = monographService.updateById(monograph);
         boolean success = false;
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(monographService.getById(monograph.getId()), monograph, auditEdit);
         if(monographService.updateById(monograph)){
             // 计算模块总工作量
             monographService.countTotalConfirmedWorkload(monograph.getUserId(), monograph.getYear());
             monographService.countTotalEstimatedWorkload(monograph.getUserId(), monograph.getYear());
+            if (yearChanged) {
+                monographService.countTotalConfirmedWorkload(monograph.getUserId(), String.valueOf(originalYear));
+                monographService.countTotalEstimatedWorkload(monograph.getUserId(), String.valueOf(originalYear));
+            }
             success = true;
         }
 

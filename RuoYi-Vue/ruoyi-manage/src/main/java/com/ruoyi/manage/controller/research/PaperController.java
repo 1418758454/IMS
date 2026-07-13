@@ -116,7 +116,8 @@ public class PaperController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
-    public AjaxResult updatePaper(@RequestBody ResearchPaper paper) {
+    public AjaxResult updatePaper(@RequestBody ResearchPaper paper,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
         paper.setUserId(Long.valueOf(userId));
         paper.setUpdateTime(LocalDateTime.now());
@@ -141,10 +142,15 @@ public class PaperController {
         // 4. 执行数据库更新
 //        boolean success = paperService.updateById(paper);
         boolean success = false;
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(paperService.getById(paper.getId()), paper, auditEdit);
         if(paperService.updateById(paper)){
             // 计算模块总工作量
             paperService.countTotalConfirmedWorkload(paper.getUserId(), paper.getYear());
             paperService.countTotalEstimatedWorkload(paper.getUserId(), paper.getYear());
+            if (yearChanged) {
+                paperService.countTotalConfirmedWorkload(paper.getUserId(), String.valueOf(originalYear));
+                paperService.countTotalEstimatedWorkload(paper.getUserId(), String.valueOf(originalYear));
+            }
             success = true;
         }
 

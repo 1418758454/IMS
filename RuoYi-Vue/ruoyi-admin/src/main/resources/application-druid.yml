@@ -9,11 +9,11 @@ spring:
             master:
                 url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
 
-#                username: root
-#                password: 123456
-                # 服务器配置 todo 3
                 username: root
-                password: 2e9702f7cd3a741b  #服务器密码
+                password: 123456
+                # 服务器配置 todo 3
+#                username: root
+#                password: 2e9702f7cd3a741b  #服务器密码
 
 
             # 从库数据源

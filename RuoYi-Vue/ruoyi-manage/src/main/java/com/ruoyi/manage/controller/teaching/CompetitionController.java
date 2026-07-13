@@ -119,7 +119,8 @@ public class CompetitionController {
      * @return 更新结果
      */
     @PutMapping("/update")
-    public AjaxResult updateCompetition(@RequestBody Competition competition) {
+    public AjaxResult updateCompetition(@RequestBody Competition competition,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         if (StringUtils.isEmpty(competition.getPdfUrl())) {
             return AjaxResult.error("\u8bf7\u4e0a\u4f20PDF\u8bc1\u660e\u6750\u6599");
         }
@@ -131,6 +132,7 @@ public class CompetitionController {
         competition.setUpdateTime(LocalDateTime.now());
         // 将审核状态修改为待审核
         competition.setStatus("待审核");
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(competitionService.getById(competition.getId()), competition, auditEdit);
         boolean success = competitionService.updateById(competition);
         if (success) {
             competitionService.countTotalWorkload(competition.getUserId(), competition.getYear());

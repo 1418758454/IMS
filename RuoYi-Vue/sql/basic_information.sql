@@ -15,6 +15,11 @@ CREATE TABLE `user_registration` (
                                      `current_position` varchar(50) DEFAULT NULL COMMENT '现有岗位（如：前端开发工程师）',
                                      `undergrad_school` varchar(100) DEFAULT NULL COMMENT '本科毕业学校',
                                      `undergrad_time` date DEFAULT NULL COMMENT '本科毕业时间',
+                                     `master_school` varchar(100) DEFAULT NULL COMMENT '硕士毕业学校',
+                                     `master_time` date DEFAULT NULL COMMENT '硕士毕业时间',
+                                     `doctor_school` varchar(100) DEFAULT NULL COMMENT '博士毕业学校',
+                                     `doctor_time` date DEFAULT NULL COMMENT '博士毕业时间',
+                                     `postdoctoral_experience` varchar(500) DEFAULT NULL COMMENT '博士后经历',
                                      `highest_education` varchar(50) DEFAULT NULL COMMENT '最高学历（如：硕士研究生）',
                                      `highest_education_time` date DEFAULT NULL COMMENT '最高学历获得时间',
                                      `overseas_experience` varchar(500) DEFAULT NULL COMMENT '出国访学经历（限制500字符，支持简要描述）',  -- TEXT→VARCHAR(500)
@@ -52,6 +57,11 @@ CREATE TABLE `basic_information` (
                                      `current_position` varchar(50) DEFAULT NULL COMMENT '现有岗位（如：前端开发工程师）',
                                      `undergrad_school` varchar(100) DEFAULT NULL COMMENT '本科毕业学校',
                                      `undergrad_time` date DEFAULT NULL COMMENT '本科毕业时间',
+                                     `master_school` varchar(100) DEFAULT NULL COMMENT '硕士毕业学校',
+                                     `master_time` date DEFAULT NULL COMMENT '硕士毕业时间',
+                                     `doctor_school` varchar(100) DEFAULT NULL COMMENT '博士毕业学校',
+                                     `doctor_time` date DEFAULT NULL COMMENT '博士毕业时间',
+                                     `postdoctoral_experience` varchar(500) DEFAULT NULL COMMENT '博士后经历',
                                      `highest_education` varchar(50) DEFAULT NULL COMMENT '最高学历（如：硕士研究生）',
                                      `highest_education_time` date DEFAULT NULL COMMENT '最高学历获得时间',
                                      `overseas_experience` varchar(500) DEFAULT NULL COMMENT '出国访学经历（限制500字符，支持简要描述）',  -- TEXT→VARCHAR(500)

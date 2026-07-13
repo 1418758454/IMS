@@ -125,7 +125,8 @@ public class SubjectController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
-    public AjaxResult updateSubject(@RequestBody ResearchSubject subject) {
+    public AjaxResult updateSubject(@RequestBody ResearchSubject subject,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         System.out.println("更新课题:"+subject.getUserId());
         // 获取登录用户名
         String userId = SecurityUtils.getUsername();
@@ -145,6 +146,7 @@ public class SubjectController {
         subject.setStatus("待审核");
 
         // 更新课题信息
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(subjectService.getById(subject.getId()), subject, auditEdit);
         boolean success = subjectService.updateSubject(subject);
         return success ? AjaxResult.success("更新课题成功") : AjaxResult.error("更新课题失败");
     }

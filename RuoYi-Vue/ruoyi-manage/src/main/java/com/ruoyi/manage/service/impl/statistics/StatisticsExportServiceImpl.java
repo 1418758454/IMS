@@ -493,7 +493,8 @@ public class StatisticsExportServiceImpl implements StatisticsExportService {
         modules.add(new ModuleDefinition<ResearchSoftware>("软著", softwareService, columns(
                 column("姓名", "userName"), column("软著名称", "name"), column("申请时间", "applyTime"),
                 column("授权时间", "authorizeTime"), column("年份", "year"), column("分配比例", "rank"),
-                column("PDF链接", "pdfUrl"), column("工作量", "workload"), column("审核状态", "status"), column("审核意见", "remark"))));
+                column("系数", "coefficient"), column("PDF链接", "pdfUrl"), column("工作量", "workload"),
+                column("审核状态", "status"), column("审核意见", "remark"))));
         return modules;
     }
 

@@ -118,7 +118,8 @@ public class TextbookController {
      * 4. 更新出版教材（重新提取出版时间年份）
      */
     @PutMapping("/update")
-    public AjaxResult updateTextbook(@RequestBody Textbook textbook) {
+    public AjaxResult updateTextbook(@RequestBody Textbook textbook,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         if (StringUtils.isEmpty(textbook.getPdfUrl())) {
             return AjaxResult.error("\u8bf7\u4e0a\u4f20PDF\u8bc1\u660e\u6750\u6599");
         }
@@ -140,6 +141,7 @@ public class TextbookController {
         // 将审核状态修改为待审核
         textbook.setStatus("待审核");
 
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(textbookService.getById(textbook.getId()), textbook, auditEdit);
         boolean success = textbookService.updateById(textbook);
         if (success) {
             // 年份变更时更新新旧年份总工作量

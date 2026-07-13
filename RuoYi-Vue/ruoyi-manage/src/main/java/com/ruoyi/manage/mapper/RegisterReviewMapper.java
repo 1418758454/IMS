@@ -46,7 +46,7 @@ public interface RegisterReviewMapper extends BaseMapper<RegisterInformation> { 
     /**
      * 3. 审核通过：插入正式表（basic_information）
      */
-    @Insert("INSERT INTO basic_information (user_id, name, gender, birth_date, native_place, political_status, title, current_position, undergrad_school, undergrad_time, highest_education, highest_education_time, overseas_experience, research_direction, phone, email, wechat, qq, personal_website, status, department, position) VALUES (#{userId}, #{name}, #{gender}, #{birthDate}, #{nativePlace}, #{politicalStatus}, #{title}, #{currentPosition}, #{undergradSchool}, #{undergradTime}, #{highestEducation}, #{highestEducationTime}, #{overseasExperience}, #{researchDirection}, #{phone}, #{email}, #{wechat}, #{qq}, #{personalWebsite}, 1, #{department}, #{position})")
+    @Insert("INSERT INTO basic_information (user_id, name, gender, birth_date, native_place, political_status, title, current_position, undergrad_school, undergrad_time, master_school, master_time, doctor_school, doctor_time, postdoctoral_experience, highest_education, highest_education_time, overseas_experience, research_direction, phone, email, wechat, qq, personal_website, status, department, position) VALUES (#{userId}, #{name}, #{gender}, #{birthDate}, #{nativePlace}, #{politicalStatus}, #{title}, #{currentPosition}, #{undergradSchool}, #{undergradTime}, #{masterSchool}, #{masterTime}, #{doctorSchool}, #{doctorTime}, #{postdoctoralExperience}, #{highestEducation}, #{highestEducationTime}, #{overseasExperience}, #{researchDirection}, #{phone}, #{email}, #{wechat}, #{qq}, #{personalWebsite}, 1, #{department}, #{position})")
     void insertBasicInfo(BasicInformation basicInfo);
 
 }

@@ -117,7 +117,8 @@ public class AwardController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
-    public AjaxResult updateAward(@RequestBody ResearchAward award) {
+    public AjaxResult updateAward(@RequestBody ResearchAward award,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
         award.setUserId(Long.valueOf(userId));
         award.setUpdateTime(LocalDateTime.now());
@@ -142,10 +143,15 @@ public class AwardController {
         // 4. 执行数据库更新
 //        Boolean success = awardService.updateById(award);
         boolean success = false;
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(awardService.getById(award.getId()), award, auditEdit);
         if(awardService.updateById(award)){
             // 计算模块总工作量
             awardService.countTotalConfirmedWorkload(award.getUserId(), award.getYear());
             awardService.countTotalEstimatedWorkload(award.getUserId(), award.getYear());
+            if (yearChanged) {
+                awardService.countTotalConfirmedWorkload(award.getUserId(), String.valueOf(originalYear));
+                awardService.countTotalEstimatedWorkload(award.getUserId(), String.valueOf(originalYear));
+            }
             success = true;
         }
 

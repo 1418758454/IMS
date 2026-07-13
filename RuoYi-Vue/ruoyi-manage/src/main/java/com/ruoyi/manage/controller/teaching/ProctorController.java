@@ -106,7 +106,8 @@ public class ProctorController {
      * 4. 更新监考记录
      */
     @PutMapping("/update")
-    public AjaxResult updateProctor(@RequestBody Proctor proctor) {
+    public AjaxResult updateProctor(@RequestBody Proctor proctor,
+            @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
         proctor.setUserId(Long.valueOf(userId));
 
@@ -118,6 +119,7 @@ public class ProctorController {
         // 将审核状态修改为待审核
         proctor.setStatus("待审核");
 
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(proctorService.getById(proctor.getId()), proctor, auditEdit);
         boolean success = proctorService.updateById(proctor);
         if (success) {
             proctorService.countTotalWorkload(proctor.getUserId(), proctor.getYear());
