@@ -82,6 +82,14 @@
         </el-form-item>
 
         <!-- 三、教育背景 -->
+        <el-form-item label="最高学历" prop="highestEducation" required>
+          <el-select v-model="form.highestEducation" placeholder="请选择最高学历">
+            <el-option label="本科" value="本科" />
+            <el-option label="硕士" value="硕士" />
+            <el-option label="博士" value="博士" />
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="本科毕业学校" prop="undergradSchool" required>
           <el-input v-model="form.undergradSchool" placeholder="请输入本科毕业院校全称" />
         </el-form-item>
@@ -97,25 +105,48 @@
           />
         </el-form-item>
 
-        <el-form-item label="最高学历" prop="highestEducation" required>
-          <el-select v-model="form.highestEducation" placeholder="请选择最高学历">
-            <el-option label="本科" value="本科" />
-            <el-option label="硕士" value="硕士" />
-            <el-option label="博士" value="博士" />
-            <el-option label="其他" value="其他" />
-          </el-select>
-        </el-form-item>
+        <template v-if="showMasterEducation">
+          <el-form-item label="硕士毕业学校" prop="masterSchool" required>
+            <el-input v-model="form.masterSchool" placeholder="请输入硕士毕业院校全称" />
+          </el-form-item>
 
-        <el-form-item label="最高学历获得时间" prop="highestEducationTime" required>
-          <el-date-picker
-            v-model="form.highestEducationTime"
-            type="date"
-            format="YYYY年MM月DD日"
-            value-format="YYYY-MM-DD"
-            placeholder="请选择最高学历获得时间"
-            style="width: 100%"
-          />
-        </el-form-item>
+          <el-form-item label="硕士毕业时间" prop="masterTime" required>
+            <el-date-picker
+              v-model="form.masterTime"
+              type="date"
+              format="YYYY年MM月DD日"
+              value-format="YYYY-MM-DD"
+              placeholder="请选择硕士毕业时间"
+              style="width: 100%"
+            />
+          </el-form-item>
+        </template>
+
+        <template v-if="showDoctorEducation">
+          <el-form-item label="博士毕业学校" prop="doctorSchool" required>
+            <el-input v-model="form.doctorSchool" placeholder="请输入博士毕业院校全称" />
+          </el-form-item>
+
+          <el-form-item label="博士毕业时间" prop="doctorTime" required>
+            <el-date-picker
+              v-model="form.doctorTime"
+              type="date"
+              format="YYYY年MM月DD日"
+              value-format="YYYY-MM-DD"
+              placeholder="请选择博士毕业时间"
+              style="width: 100%"
+            />
+          </el-form-item>
+
+          <el-form-item label="博士后经历" prop="postdoctoralExperience">
+            <el-input
+              v-model="form.postdoctoralExperience"
+              type="textarea"
+              rows="2"
+              placeholder="如有，请填写博士后单位及时间"
+            />
+          </el-form-item>
+        </template>
 
         <!-- 四、联系方式 -->
         <el-form-item label="电话" prop="phone" required>
@@ -153,10 +184,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue';
+import { computed, getCurrentInstance, ref, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { updateUserProfile } from "@/api/system/user"; // 假设接口支持更新所有字段
+import {
+  hasDoctorEducation,
+  hasMasterEducation,
+  normalizeEducationPayload
+} from '@/utils/educationBackground.js';
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();
@@ -180,6 +216,11 @@ const form = reactive({
   currentPosition: '',
   undergradSchool: '',
   undergradTime: '',
+  masterSchool: '',
+  masterTime: '',
+  doctorSchool: '',
+  doctorTime: '',
+  postdoctoralExperience: '',
   highestEducation: '',
   highestEducationTime: '',
   overseasExperience: '',
@@ -226,11 +267,56 @@ const formRules = reactive({
   undergradTime: [
     { required: true, message: '请选择本科毕业时间', trigger: 'change' }
   ],
+  masterSchool: [
+    {
+      validator: (rule, value, callback) => {
+        if (hasMasterEducation(form.highestEducation) && !value) {
+          callback(new Error('请输入硕士毕业学校'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  masterTime: [
+    {
+      validator: (rule, value, callback) => {
+        if (hasMasterEducation(form.highestEducation) && !value) {
+          callback(new Error('请选择硕士毕业时间'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'change'
+    }
+  ],
+  doctorSchool: [
+    {
+      validator: (rule, value, callback) => {
+        if (hasDoctorEducation(form.highestEducation) && !value) {
+          callback(new Error('请输入博士毕业学校'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  doctorTime: [
+    {
+      validator: (rule, value, callback) => {
+        if (hasDoctorEducation(form.highestEducation) && !value) {
+          callback(new Error('请选择博士毕业时间'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'change'
+    }
+  ],
   highestEducation: [
     { required: true, message: '请选择最高学历', trigger: 'change' }
-  ],
-  highestEducationTime: [
-    { required: true, message: '请选择最高学历获得时间', trigger: 'change' }
   ],
   phone: [
     { required: true, message: '请输入手机号', trigger: 'blur' },
@@ -245,17 +331,20 @@ const formRules = reactive({
 
 // 表单引用
 const profileFormRef = ref(null);
+const showMasterEducation = computed(() => hasMasterEducation(form.highestEducation));
+const showDoctorEducation = computed(() => hasDoctorEducation(form.highestEducation));
 
 // 提交修改
 const submitForm = async () => {
   try {
     await profileFormRef.value.validate();
     // 调用更新接口（确保接口支持所有字段）
-    const response = await updateUserProfile(form);
+    const submitData = normalizeEducationPayload(form);
+    const response = await updateUserProfile(submitData);
     if (response.code === 200) {
       ElMessage.success('资料修改成功');
       // 通知父组件更新用户信息
-      emit('update:user', { ...props.user, ...form });
+      emit('update:user', { ...props.user, ...submitData });
       closeForm();
     } else {
       ElMessage.error(response.msg || '修改失败，请重试');
@@ -288,6 +377,11 @@ watch(() => props.user, (user) => {
       currentPosition: user.currentPosition || '',
       undergradSchool: user.undergradSchool || '',
       undergradTime: user.undergradTime || '',
+      masterSchool: user.masterSchool || '',
+      masterTime: user.masterTime || '',
+      doctorSchool: user.doctorSchool || '',
+      doctorTime: user.doctorTime || '',
+      postdoctoralExperience: user.postdoctoralExperience || '',
       highestEducation: user.highestEducation || '',
       highestEducationTime: user.highestEducationTime || '',
       overseasExperience: user.overseasExperience || '',

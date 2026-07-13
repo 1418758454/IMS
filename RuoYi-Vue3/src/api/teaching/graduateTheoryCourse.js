@@ -34,8 +34,9 @@ export function addGraduateTheoryCourse(data) {
  * @param {Object} data - 课程表单数据（含ID）
  * @returns {Promise} - 响应数据
  */
-export function updateGraduateTheoryCourse(data) {
+export function updateGraduateTheoryCourse(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/graduateTheoryCourse/update', // 修改模块标识
     method: 'put',
     data: data

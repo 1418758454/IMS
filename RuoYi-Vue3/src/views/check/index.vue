@@ -193,6 +193,64 @@
             </el-select>
         </el-form-item>
 
+        <el-form-item label="本科毕业学校" prop="undergradSchool">
+            <el-input v-model="editForm.undergradSchool" placeholder="请输入本科毕业院校全称" />
+        </el-form-item>
+
+        <el-form-item label="本科毕业时间" prop="undergradTime">
+            <el-date-picker
+            v-model="editForm.undergradTime"
+            type="date"
+            format="YYYY年MM月DD日"
+            value-format="YYYY-MM-DD"
+            placeholder="请选择本科毕业时间"
+            style="width: 100%"
+            />
+        </el-form-item>
+
+        <template v-if="showEditMasterEducation">
+            <el-form-item label="硕士毕业学校" prop="masterSchool">
+            <el-input v-model="editForm.masterSchool" placeholder="请输入硕士毕业院校全称" />
+            </el-form-item>
+
+            <el-form-item label="硕士毕业时间" prop="masterTime">
+            <el-date-picker
+                v-model="editForm.masterTime"
+                type="date"
+                format="YYYY年MM月DD日"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择硕士毕业时间"
+                style="width: 100%"
+            />
+            </el-form-item>
+        </template>
+
+        <template v-if="showEditDoctorEducation">
+            <el-form-item label="博士毕业学校" prop="doctorSchool">
+            <el-input v-model="editForm.doctorSchool" placeholder="请输入博士毕业院校全称" />
+            </el-form-item>
+
+            <el-form-item label="博士毕业时间" prop="doctorTime">
+            <el-date-picker
+                v-model="editForm.doctorTime"
+                type="date"
+                format="YYYY年MM月DD日"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择博士毕业时间"
+                style="width: 100%"
+            />
+            </el-form-item>
+
+            <el-form-item label="博士后经历" prop="postdoctoralExperience">
+            <el-input
+                v-model="editForm.postdoctoralExperience"
+                type="textarea"
+                rows="2"
+                placeholder="如有，请填写博士后单位及时间"
+            />
+            </el-form-item>
+        </template>
+
         <!-- 电话 -->
         <el-form-item label="电话" prop="phone">
             <el-input v-model="editForm.phone" placeholder="请输入手机号码" />
@@ -210,9 +268,14 @@
 </template>
  
 <script setup>
-import { ref, onMounted, reactive } from 'vue';
+import { computed, ref, onMounted, reactive } from 'vue';
 import { getReviewList, reviewRegistration, updateRegistration  } from '@/api/register.js'; // 后端接口
 import { ElMessage, ElMessageBox } from 'element-plus';
+import {
+  hasDoctorEducation,
+  hasMasterEducation,
+  normalizeEducationPayload
+} from '@/utils/educationBackground.js';
 
 const editDialogVisible = ref(false); // 修改弹窗显示状态
 const editFormRef = ref(null); // 表单引用
@@ -229,6 +292,56 @@ const editRules = reactive({
   position: [{ required: true, message: '请选择职务', trigger: 'change' }],
   currentPosition: [{ required: true, message: '请输入现有岗位', trigger: 'blur' }],
   highestEducation: [{ required: true, message: '请选择最高学历', trigger: 'change' }],
+  undergradSchool: [{ required: true, message: '请输入本科毕业学校', trigger: 'blur' }],
+  undergradTime: [{ required: true, message: '请选择本科毕业时间', trigger: 'change' }],
+  masterSchool: [
+    {
+      validator: (rule, value, callback) => {
+        if (hasMasterEducation(editForm.highestEducation) && !value) {
+          callback(new Error('请输入硕士毕业学校'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  masterTime: [
+    {
+      validator: (rule, value, callback) => {
+        if (hasMasterEducation(editForm.highestEducation) && !value) {
+          callback(new Error('请选择硕士毕业时间'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'change'
+    }
+  ],
+  doctorSchool: [
+    {
+      validator: (rule, value, callback) => {
+        if (hasDoctorEducation(editForm.highestEducation) && !value) {
+          callback(new Error('请输入博士毕业学校'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  doctorTime: [
+    {
+      validator: (rule, value, callback) => {
+        if (hasDoctorEducation(editForm.highestEducation) && !value) {
+          callback(new Error('请选择博士毕业时间'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'change'
+    }
+  ],
   phone: [
     { required: true, message: '请输入电话', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
@@ -254,6 +367,8 @@ const searchParams = reactive({
 // 状态映射（0-待审核，1-通过，2-拒绝）
 const statusText = { 0: '待审核', 1: '已通过', 2: '已拒绝' };
 const statusType = { 0: 'info', 1: 'success', 2: 'danger' };
+const showEditMasterEducation = computed(() => hasMasterEducation(editForm.highestEducation));
+const showEditDoctorEducation = computed(() => hasDoctorEducation(editForm.highestEducation));
 
 // 拒绝弹窗相关
 const rejectDialogVisible = ref(false);
@@ -298,7 +413,7 @@ const handleEditSubmit = async () => {
  
   try {
     // 调用后端修改接口）
-    const response = await updateRegistration(editForm); 
+    const response = await updateRegistration(normalizeEducationPayload(editForm));
     if (response.code === 200) {
       ElMessage.success('修改成功');
       editDialogVisible.value = false; // 关闭弹窗

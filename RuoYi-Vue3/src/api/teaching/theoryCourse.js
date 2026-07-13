@@ -49,8 +49,9 @@ export function addTheoryCourse(data) {
  * @param {number} data.year - 授课年份（必填）
  * @returns {Promise} - 响应数据（{ code: 200, msg: "更新成功", data: { id: 1, ... } }）
  */
-export function updateTheoryCourse(data) {
+export function updateTheoryCourse(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/theoryCourse/update',
     method: 'put', // 遵循RESTful规范，更新用PUT方法
     data: data

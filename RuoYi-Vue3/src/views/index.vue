@@ -11,10 +11,14 @@
       <tr><td class="label">部门</td><td>{{ formData.department }}</td></tr>
       <tr><td class="label">职务</td><td>{{ formData.position }}</td></tr>    
       <tr><td class="label">现有岗位</td><td>{{ formData.currentPosition }}</td></tr>
-      <tr><td class="label">本科毕业学校</td><td>{{ formData.undergradSchool }}</td></tr>
-      <tr><td class="label">本科毕业时间</td><td>{{ formatDate(formData.undergradTime) }}</td></tr>
-      <tr><td class="label">最高学历</td><td>{{ formData.highestEducation }}</td></tr>
-      <tr><td class="label">最高学历获得时间</td><td>{{ formatDate(formData.highestEducationTime) }}</td></tr>
+      <tr><td class="label">最高学历</td><td>{{ formData.highestEducation || '-' }}</td></tr>
+      <tr><td class="label">本科毕业学校</td><td>{{ formData.undergradSchool || '-' }}</td></tr>
+      <tr><td class="label">本科毕业时间</td><td>{{ formatDate(formData.undergradTime) || '-' }}</td></tr>
+      <tr v-if="showMasterEducation"><td class="label">硕士毕业学校</td><td>{{ formData.masterSchool || '-' }}</td></tr>
+      <tr v-if="showMasterEducation"><td class="label">硕士毕业时间</td><td>{{ formatDate(formData.masterTime) || '-' }}</td></tr>
+      <tr v-if="showDoctorEducation"><td class="label">博士毕业学校</td><td>{{ formData.doctorSchool || '-' }}</td></tr>
+      <tr v-if="showDoctorEducation"><td class="label">博士毕业时间</td><td>{{ formatDate(formData.doctorTime) || '-' }}</td></tr>
+      <tr v-if="showDoctorEducation"><td class="label">博士后经历</td><td>{{ formData.postdoctoralExperience || '-' }}</td></tr>
       <tr><td class="label">出国访学经历</td><td>{{ formData.overseasExperience }}</td></tr>
       <tr><td class="label">主要研究方向</td><td>{{ formData.researchDirection }}</td></tr>
       <tr>
@@ -57,6 +61,10 @@ import { getBasicInformation } from "@/api/basicInformation"; // 导入接口
 import { getInfo } from "@/api/login";
 import { parseStrEmpty } from "@/utils/ruoyi"; // 复用工具函数（处理空值）
 import { get } from "@vueuse/core";
+import {
+  hasDoctorEducation,
+  hasMasterEducation
+} from "@/utils/educationBackground.js";
 
 export default {
   data() {
@@ -73,6 +81,11 @@ export default {
         currentPosition: '',
         undergradSchool: '',
         undergradTime: '',
+        masterSchool: '',
+        masterTime: '',
+        doctorSchool: '',
+        doctorTime: '',
+        postdoctoralExperience: '',
         highestEducation: '',
         highestEducationTime: '',
         overseasExperience: '',
@@ -81,6 +94,14 @@ export default {
         personalWebsite: ''
       }
     };
+  },
+  computed: {
+    showMasterEducation() {
+      return hasMasterEducation(this.formData.highestEducation);
+    },
+    showDoctorEducation() {
+      return hasDoctorEducation(this.formData.highestEducation);
+    }
   },
   mounted() {
     // 从路由参数获取人员ID（根据实际场景调整）
@@ -124,6 +145,11 @@ export default {
               currentPosition: data.currentPosition || "",
               undergradSchool: data.undergradSchool || "",
               undergradTime: data.undergradTime || "",
+              masterSchool: data.masterSchool || "",
+              masterTime: data.masterTime || (hasMasterEducation(data.highestEducation) && !hasDoctorEducation(data.highestEducation) ? data.highestEducationTime || "" : ""),
+              doctorSchool: data.doctorSchool || "",
+              doctorTime: data.doctorTime || (hasDoctorEducation(data.highestEducation) ? data.highestEducationTime || "" : ""),
+              postdoctoralExperience: data.postdoctoralExperience || "",
               highestEducation: data.highestEducation || "",
               highestEducationTime: data.highestEducationTime || "",
               overseasExperience: data.overseasExperience || "",

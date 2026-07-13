@@ -5,15 +5,23 @@
       <h3 class="module-title">二、本科教学（实验课）</h3>
       <!-- 新增按钮：只在非审核模式下显示 -->
       <el-button 
-        v-if="mode !== 'check'" 
+        v-if="mode === 'show'"
         type="primary" 
         icon="Plus" 
         size="small" 
+        :disabled="!hasTaskScreenshot"
         @click="addRow"
       >
         新增行
       </el-button>
     </div>
+
+    <TeachingTaskScreenshotPanel
+      v-if="mode === 'show'"
+      :year="year"
+      module-type="experiment"
+      @attachment-state-change="hasTaskScreenshot = $event"
+    />
 
     <!-- 表格（结构、样式与理论课完全一致） -->
     <el-table 
@@ -33,6 +41,12 @@
 
       <el-table-column v-if="mode === 'check' || mode === 'search'" label="姓名" prop="userName" align="center">
         <template v-slot="scope"><span>{{ scope.row.userName }}</span></template>
+      </el-table-column>
+
+      <el-table-column v-if="mode === 'check' || mode === 'search'" label="个人教学任务截图（PDF）" min-width="180" align="center">
+        <template v-slot="scope">
+          <TeachingTaskScreenshotViewer :user-id="scope.row.userId" :year="scope.row.year" module-type="experiment" />
+        </template>
       </el-table-column>
 
       <!-- 课程名称 -->
@@ -135,7 +149,11 @@
       <el-table-column label="操作" min-width="260" align="center">
         <template v-slot="scope">
            <!-- 审核模式的操作按钮 -->
-          <div v-if="mode === 'check'" class="check-actions">
+          <div v-if="mode === 'check' && scope.row.isEditing" class="edit-actions">
+            <el-button type="primary" size="small" @click="saveRow(scope.row)">保存</el-button>
+            <el-button size="small" @click="cancelRow(scope.row, scope.$index)">取消</el-button>
+          </div>
+          <div v-else-if="mode === 'check'" class="check-actions">
             <el-button 
               type="success" 
               size="small" 
@@ -152,6 +170,7 @@
             >
               退回修改
             </el-button>
+            <el-button type="primary" size="small" icon="Edit" @click="editRow(scope.row)">修改</el-button>
             <el-button type="danger" size="small" icon="Delete" @click="deleteRow(scope.row.id, scope.$index)">删除</el-button>
           </div>
           
@@ -260,8 +279,11 @@
 <script>
 import { ElMessage } from 'element-plus';
 import { Edit, Delete } from '@element-plus/icons-vue';
+import TeachingTaskScreenshotPanel from './components/TeachingTaskScreenshotPanel.vue';
+import TeachingTaskScreenshotViewer from './components/TeachingTaskScreenshotViewer.vue';
 
 export default {
+  components: { TeachingTaskScreenshotPanel, TeachingTaskScreenshotViewer },
   props: { 
     data: { type: Array, required: true }, 
     year: { type: Number, required: true },
@@ -285,7 +307,8 @@ export default {
       tableData: JSON.parse(JSON.stringify(this.data)),
       // 意见弹窗相关
       remarkDialogVisible: false,
-      currentRemark: '', // 当前显示的备注内容 
+      currentRemark: '', // 当前显示的备注内容
+      hasTaskScreenshot: false,
     }; 
   },
   watch: { 

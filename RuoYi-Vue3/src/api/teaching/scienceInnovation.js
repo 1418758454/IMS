@@ -24,8 +24,9 @@ export function addScienceInnovation(data) {
 }
 
 // 3. 更新科技创新项目
-export function updateScienceInnovation(data) {
+export function updateScienceInnovation(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/scienceInnovation/update',
     method: 'put',
     data // 含id的完整表单数据

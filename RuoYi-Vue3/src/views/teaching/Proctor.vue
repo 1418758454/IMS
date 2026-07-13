@@ -89,7 +89,11 @@
       <el-table-column label="操作" min-width="260" align="center">
         <template v-slot="scope">
            <!-- 审核模式的操作按钮 -->
-          <div v-if="mode === 'check'" class="check-actions">
+          <div v-if="mode === 'check' && scope.row.isEditing" class="edit-actions">
+            <el-button type="primary" size="small" @click="saveRow(scope.row)">保存</el-button>
+            <el-button size="small" @click="cancelRow(scope.row, scope.$index)">取消</el-button>
+          </div>
+          <div v-else-if="mode === 'check'" class="check-actions">
             <el-button 
               type="success" 
               size="small" 
@@ -106,6 +110,7 @@
             >
               退回修改
             </el-button>
+            <el-button type="primary" size="small" icon="Edit" @click="editRow(scope.row)">修改</el-button>
             <el-button type="danger" size="small" icon="Delete" @click="deleteRow(scope.row.id, scope.$index)">删除</el-button>
           </div>
           

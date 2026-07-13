@@ -23,8 +23,9 @@ export function addTextbook(data) {
 }
 
 // 3. 更新出版教材
-export function updateTextbook(data) {
+export function updateTextbook(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/textbook/update',
     method: 'put',
     data

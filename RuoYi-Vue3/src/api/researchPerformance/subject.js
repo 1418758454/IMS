@@ -55,8 +55,9 @@ export function deleteSubject(ids) {
  * @param {string} data.subjectType - 课题类型（必填，如“国家自然基金”）
  * @param {Array} data.executeTime - 执行时间范围
  */
-export function updateSubject(data) {
+export function updateSubject(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/research/subject/update',
     method: 'put',
     data // 含id的完整表单数据

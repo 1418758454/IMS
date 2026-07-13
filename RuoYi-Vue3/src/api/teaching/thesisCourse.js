@@ -37,8 +37,9 @@ export function addThesis(data) {
 }
 
 // 3. 更新毕业论文记录
-export function updateThesis(data) {
+export function updateThesis(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/thesisCourse/update',
     method: 'put',
     data: data

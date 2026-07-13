@@ -24,8 +24,9 @@ export function addEducationReformPaper(data) {
 }
 
 // 3. 更新教改论文
-export function updateEducationReformPaper(data) {
+export function updateEducationReformPaper(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/educationReformPaper/update',
     method: 'put',
     data // 含id的完整表单数据

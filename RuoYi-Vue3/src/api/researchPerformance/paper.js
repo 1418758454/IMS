@@ -56,8 +56,9 @@ export function deletePaper(ids) {
  * @param {string} data.level - 论文级别（必填，如"SCI一区"）
  */
 
-export function updatePaper(data) {
+export function updatePaper(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/research/paper/update',
     method: 'put',
     data

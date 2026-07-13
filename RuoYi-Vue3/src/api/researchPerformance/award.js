@@ -56,8 +56,9 @@ export function deleteAward(ids) {
  * @param {string} data.level - 奖励级别（必填，如"省部级"）
  */
 
-export function updateAward(data) {
+export function updateAward(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/research/award/update',
     method: 'put',
     data

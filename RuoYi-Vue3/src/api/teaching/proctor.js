@@ -24,8 +24,9 @@ export function addProctor(data) {
 }
 
 // 3. 更新监考记录
-export function updateProctor(data) {
+export function updateProctor(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/proctor/update',
     method: 'put',
     data // 含id的完整表单数据

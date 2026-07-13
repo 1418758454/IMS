@@ -1,5 +1,5 @@
 <template>
-  <div class="teaching-performance">
+  <div class="teaching-performance business-table-scroll-scope">
     <!-- 页面标题 -->
     <div class="page-header">
       <h2 class="main-title">教学业绩审核</h2>
@@ -105,7 +105,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('undergraduateTheory', size)"
       @current-change="(page) => handleCurrentChange('undergraduateTheory', page)"
     />
@@ -120,7 +121,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('undergraduateExperiment', size)"
       @current-change="(page) => handleCurrentChange('undergraduateExperiment', page)"
     />
@@ -135,7 +137,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('practiceTeaching', size)"
       @current-change="(page) => handleCurrentChange('practiceTeaching', page)"
     />
@@ -150,7 +153,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('undergraduateThesis', size)"
       @current-change="(page) => handleCurrentChange('undergraduateThesis', page)"
     />
@@ -165,7 +169,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('scienceInnovation', size)"
       @current-change="(page) => handleCurrentChange('scienceInnovation', page)"
     />
@@ -180,7 +185,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('competition', size)"
       @current-change="(page) => handleCurrentChange('competition', page)"
     />
@@ -195,7 +201,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('textbook', size)"
       @current-change="(page) => handleCurrentChange('textbook', page)"
     />
@@ -210,7 +217,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('educationReform', size)"
       @current-change="(page) => handleCurrentChange('educationReform', page)"
     />
@@ -225,7 +233,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('educationReformPaper', size)"
       @current-change="(page) => handleCurrentChange('educationReformPaper', page)"
     />
@@ -240,7 +249,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('proctor', size)"
       @current-change="(page) => handleCurrentChange('proctor', page)"
     />
@@ -255,7 +265,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('graduateTheory', size)"
       @current-change="(page) => handleCurrentChange('graduateTheory', page)"
     />
@@ -270,7 +281,8 @@
       mode="check"
       @audit="handleAuditPass"
       @reject="handleAuditReject"
-      @delete="handleDelete"
+      @save-row="handleSaveRow"
+      @delete-row="handleDeleteRow"
       @size-change="(size) => handleSizeChange('graduateGuideStudent', size)"
       @current-change="(page) => handleCurrentChange('graduateGuideStudent', page)"
     />
@@ -525,61 +537,73 @@ export default {
       MODULE_API_MAP: {
         undergraduateTheory: {
           listApi: getTheoryCourseList,
+          updateApi: updateTheoryCourse,
           auditApi: auditUndergraduateTheory,
           deleteApi: deleteTheoryCourse, 
         },
         undergraduateExperiment: {
           listApi: getExperimentCourseList,
+          updateApi: updateExperimentCourse,
           auditApi: auditUndergraduateExperiment,
           deleteApi: deleteExperimentCourse
         },
         practiceTeaching: {
           listApi: getPracticeTeachingList,
+          updateApi: updatePracticeTeaching,
           auditApi: auditPracticeTeaching,
           deleteApi: deletePracticeTeaching
         },
         undergraduateThesis: {
           listApi: getThesisList,
+          updateApi: updateThesis,
           auditApi: auditThesis,
           deleteApi: deleteThesis
         },
         scienceInnovation: {
           listApi: getScienceInnovationList,
+          updateApi: updateScienceInnovation,
           auditApi: auditScienceInnovation,
           deleteApi: deleteScienceInnovation
         },
         competition: {
           listApi: getCompetitionList,
+          updateApi: updateCompetition,
           auditApi: auditCompetition,
           deleteApi: deleteCompetition
         },
         textbook: {
           listApi: getTextbookList,
+          updateApi: updateTextbook,
           auditApi: auditTextbook,
           deleteApi: deleteTextbook
         },
         educationReform: {
           listApi: getEducationReformList,
+          updateApi: updateEducationReform,
           auditApi: auditEducationReform,
           deleteApi: deleteEducationReform
         },
         educationReformPaper: {
           listApi: getEducationReformPaperList,
+          updateApi: updateEducationReformPaper,
           auditApi: auditEducationReformPaper,
           deleteApi: deleteEducationReformPaper
         },
         proctor: {
           listApi: getProctorList,
+          updateApi: updateProctor,
           auditApi: auditProctor,
           deleteApi: deleteProctor
         },
         graduateTheory: {
           listApi: getGraduateTheoryCourseList,
+          updateApi: updateGraduateTheoryCourse,
           auditApi: auditGraduateTheoryCourse,
           deleteApi: deleteGraduateTheoryCourse
         },
         graduateGuideStudent: {
           listApi: getGraduateGuideStudentList,
+          updateApi: updateGraduateGuideStudent,
           auditApi: auditGraduateGuideStudent,
           deleteApi: deleteGraduateGuideStudent
         }
@@ -748,7 +772,7 @@ export default {
         year: this.filterForm.year,
         deptId: this.filterForm.deptId,
         userId: this.filterForm.userId || undefined,
-        isAudit: true
+        isAudit: false
       };
 
       return this.getModuleDataWithPagination(
@@ -807,21 +831,14 @@ export default {
     /**
      * 删除数据
      */
-    handleDelete(module) {
+    handleDeleteRow(module, rowId) {
       const { deleteApi } = this.MODULE_API_MAP[module];
-      const ids = []; // 这里需要从子组件传递选中的行ID
-
-      if (ids.length === 0) {
-        this.$message.warning('请先选中要删除的数据行');
-        return;
-      }
-
-      this.$confirm(`确定删除选中的 ${ids.length} 条${this.getModuleName(module)}数据吗？`, "警告", {
+      this.$confirm(`确定删除这条${this.getModuleName(module)}数据吗？`, "警告", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
         type: "warning"
       }).then(() => {
-        deleteApi(ids).then(res => {
+        deleteApi([rowId]).then(res => {
           if (res.code === 200) {
             this.$message.success("删除成功");
             this.refreshModuleData(module);
@@ -833,7 +850,31 @@ export default {
           console.error("删除失败:", error);
         });
       }).catch(() => {
+        this.refreshModuleData(module);
         this.$message.info("已取消删除");
+      });
+    },
+
+    handleSaveRow(module, row) {
+      const { updateApi } = this.MODULE_API_MAP[module];
+      if (!updateApi) {
+        this.$message.error("未找到对应模块的修改接口");
+        this.refreshModuleData(module);
+        return;
+      }
+
+      updateApi(row, true).then(res => {
+        if (res.code === 200) {
+          this.$message.success("修改成功");
+          this.refreshModuleData(module);
+        } else {
+          this.$message.error(res.msg || "修改失败");
+          this.refreshModuleData(module);
+        }
+      }).catch(error => {
+        this.$message.error("网络异常，请重试");
+        console.error("修改失败:", error);
+        this.refreshModuleData(module);
       });
     },
 

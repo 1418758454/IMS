@@ -23,8 +23,9 @@ export function addCompetition(data) {
 }
 
 // 3. 更新学科竞赛项目
-export function updateCompetition(data) {
+export function updateCompetition(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/competition/update',
     method: 'put',
     data // 含id的完整表单数据（与新增字段一致）

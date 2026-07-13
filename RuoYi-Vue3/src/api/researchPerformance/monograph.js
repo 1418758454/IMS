@@ -55,8 +55,9 @@ export function deleteMonograph(ids) {
  * @param {number} data.rank - 排名（必填）
  */
 
-export function updateMonograph(data) {
+export function updateMonograph(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/research/monograph/update',
     method: 'put',
     data

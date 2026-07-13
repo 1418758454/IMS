@@ -1,5 +1,5 @@
 <template>
-  <div class="teaching-performance">
+  <div class="teaching-performance business-table-scroll-scope">
     <!-- 页面标题 -->
     <div class="page-header">
       <h2 class="main-title">教学业绩统计</h2>

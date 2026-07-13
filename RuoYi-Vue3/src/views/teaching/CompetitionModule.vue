@@ -2,7 +2,10 @@
   <el-card class="module-card">
     <!-- 模块头部（标题+新增按钮） -->
     <div class="module-header">
-      <h3 class="module-title">六、学科竞赛</h3>
+      <div class="module-heading">
+        <h3 class="module-title">六、学科竞赛</h3>
+        <p class="module-hint">数学建模、数学竞赛、市场调研大赛、统计建模不需要提供证明材料</p>
+      </div>
       <!-- 新增按钮：只在非审核模式下显示 -->
       <el-button 
         v-if="mode !== 'check'" 
@@ -109,7 +112,11 @@
       <el-table-column label="操作" min-width="260" align="center">
         <template v-slot="scope">
            <!-- 审核模式的操作按钮 -->
-          <div v-if="mode === 'check'" class="check-actions">
+          <div v-if="mode === 'check' && scope.row.isEditing" class="edit-actions">
+            <el-button type="primary" size="small" @click="saveRow(scope.row)">保存</el-button>
+            <el-button size="small" @click="cancelRow(scope.row, scope.$index)">取消</el-button>
+          </div>
+          <div v-else-if="mode === 'check'" class="check-actions">
             <el-button 
               type="success" 
               size="small" 
@@ -126,6 +133,7 @@
             >
               退回修改
             </el-button>
+            <el-button type="primary" size="small" icon="Edit" @click="editRow(scope.row)">修改</el-button>
             <el-button type="danger" size="small" icon="Delete" @click="deleteRow(scope.row.id, scope.$index)">删除</el-button>
           </div>
           
@@ -305,7 +313,7 @@ export default {
       
       // 工作量保留三位小数
       row.workload = Number(row.workload).toFixed(3);
-      if (!(await prepareTeachingPdf(row))) return;
+      if (!(await prepareTeachingPdf(row, { required: false }))) return;
 
       // 删除临时字段，避免传递给后端
       delete row.isEditing;
@@ -402,6 +410,20 @@ export default {
   padding-left: 10px;
   border-left: 4px solid #409eff;
   margin: 0;
+}
+
+.module-heading {
+  min-width: 0;
+}
+
+.module-hint {
+  margin: 6px 0 0 14px;
+  padding: 4px 8px;
+  color: #8a5a00;
+  background-color: #fff8e6;
+  border-left: 3px solid #e6a23c;
+  font-size: 13px;
+  line-height: 1.5;
 }
 .inline-edit-table {
   width: 100%;

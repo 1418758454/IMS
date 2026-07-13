@@ -7,12 +7,14 @@
         </keep-alive>
       </transition>
     </router-view>
+    <business-table-floating-scrollbar />
     <iframe-toggle />
   </section>
 </template>
 
 <script setup>
 import iframeToggle from "./IframeToggle/index"
+import BusinessTableFloatingScrollbar from '@/components/BusinessTableFloatingScrollbar/index.vue'
 import useTagsViewStore from '@/store/modules/tagsView'
 
 const tagsViewStore = useTagsViewStore()

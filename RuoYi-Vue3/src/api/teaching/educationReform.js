@@ -24,8 +24,9 @@ export function addEducationReform(data) {
 }
 
 // 3. 更新教改项目
-export function updateEducationReform(data) {
+export function updateEducationReform(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/educationReform/update',
     method: 'put',
     data // 含id的完整表单数据（与科技创新结构一致）

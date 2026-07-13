@@ -41,8 +41,9 @@ export function addPracticeTeaching(data) {
  * @param {number} data.classCount - 班级数
  * @returns {Promise} 响应数据
  */
-export function updatePracticeTeaching(data) {
+export function updatePracticeTeaching(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/practiceTeaching/update',
     method: 'put',
     data: data

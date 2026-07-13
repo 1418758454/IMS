@@ -24,8 +24,9 @@ export function addGraduateGuideStudent(data) {
 }
 
 // 3. 更新指导学生记录
-export function updateGraduateGuideStudent(data) {
+export function updateGraduateGuideStudent(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/graduateGuideStudent/update',
     method: 'put',
     data // 含id的完整表单数据

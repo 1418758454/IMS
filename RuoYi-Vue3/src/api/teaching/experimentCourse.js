@@ -31,8 +31,9 @@ export function addExperimentCourse(data) {
  * @param {Object} data - 含ID的实验课表单数据
  * @returns {Promise} 响应数据
  */
-export function updateExperimentCourse(data) {
+export function updateExperimentCourse(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/teaching/experimentCourse/update',
     method: 'put',
     data: data

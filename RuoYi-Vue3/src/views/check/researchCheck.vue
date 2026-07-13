@@ -1,5 +1,5 @@
 <template>
-  <div class="research-performance">
+  <div class="research-performance business-table-scroll-scope">
     <!-- 页面标题 -->
     <div class="page-header">
       <h2 class="main-title">科研业绩审核</h2>
@@ -138,7 +138,7 @@
           <template v-slot="scope"><span>{{ scope.row.coefficient }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="立项合同（PDF）" align="center" width="160">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -163,12 +163,13 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="180" align="center">
+        <el-table-column label="操作" min-width="350" align="center">
           <template v-slot="scope">
               <el-button 
                 type="success" 
                 size="small" 
                 @click="handleAudit(scope.row, 'subject', '已通过')"
+                :disabled="scope.row.status === '已通过'"
               >
                 审核通过
               </el-button>
@@ -180,6 +181,8 @@
               >
                 退回修改
               </el-button>
+              <el-button type="primary" size="small" icon="Edit" @click="openResearchEdit(scope.row, 'subject')">修改</el-button>
+              <el-button type="danger" size="small" icon="Delete" @click="handleDeleteRow(scope.row, 'subject')">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -235,7 +238,7 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="论文原件（PDF）" align="center" width="160">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -260,12 +263,13 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="180" align="center">
+        <el-table-column label="操作" min-width="350" align="center">
           <template v-slot="scope">
               <el-button 
                 type="success" 
                 size="small" 
                 @click="handleAudit(scope.row, 'paper', '已通过')"
+                :disabled="scope.row.status === '已通过'"
               >
                 审核通过
               </el-button>
@@ -277,6 +281,8 @@
               >
                 退回修改
               </el-button>
+              <el-button type="primary" size="small" icon="Edit" @click="openResearchEdit(scope.row, 'paper')">修改</el-button>
+              <el-button type="danger" size="small" icon="Delete" @click="handleDeleteRow(scope.row, 'paper')">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -333,7 +339,7 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="封面、目录及封底扫描件（PDF）" align="center" width="260">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -358,12 +364,13 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="180" align="center">
+        <el-table-column label="操作" min-width="350" align="center">
           <template v-slot="scope">
               <el-button 
                 type="success" 
                 size="small" 
                 @click="handleAudit(scope.row, 'monograph', '已通过')"
+                :disabled="scope.row.status === '已通过'"
               >
                 审核通过
               </el-button>
@@ -375,6 +382,8 @@
               >
                 退回修改
               </el-button>
+              <el-button type="primary" size="small" icon="Edit" @click="openResearchEdit(scope.row, 'monograph')">修改</el-button>
+              <el-button type="danger" size="small" icon="Delete" @click="handleDeleteRow(scope.row, 'monograph')">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -430,7 +439,7 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证书（PDF）" align="center" width="120">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -455,12 +464,13 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="180" align="center">
+        <el-table-column label="操作" min-width="350" align="center">
           <template v-slot="scope">
               <el-button 
                 type="success" 
                 size="small" 
                 @click="handleAudit(scope.row, 'award', '已通过')"
+                :disabled="scope.row.status === '已通过'"
               >
                 审核通过
               </el-button>
@@ -472,6 +482,8 @@
               >
                 退回修改
               </el-button>
+              <el-button type="primary" size="small" icon="Edit" @click="openResearchEdit(scope.row, 'award')">修改</el-button>
+              <el-button type="danger" size="small" icon="Delete" @click="handleDeleteRow(scope.row, 'award')">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -527,7 +539,7 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证书（PDF）" align="center" width="120">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -552,12 +564,13 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="180" align="center">
+        <el-table-column label="操作" min-width="350" align="center">
           <template v-slot="scope">
               <el-button 
                 type="success" 
                 size="small" 
                 @click="handleAudit(scope.row, 'patent', '已通过')"
+                :disabled="scope.row.status === '已通过'"
               >
                 审核通过
               </el-button>
@@ -569,6 +582,8 @@
               >
                 退回修改
               </el-button>
+              <el-button type="primary" size="small" icon="Edit" @click="openResearchEdit(scope.row, 'patent')">修改</el-button>
+              <el-button type="danger" size="small" icon="Delete" @click="handleDeleteRow(scope.row, 'patent')">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -621,7 +636,7 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证书（PDF）" align="center" width="120">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -646,12 +661,13 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="180" align="center">
+        <el-table-column label="操作" min-width="350" align="center">
           <template v-slot="scope">
               <el-button 
                 type="success" 
                 size="small" 
                 @click="handleAudit(scope.row, 'software', '已通过')"
+                :disabled="scope.row.status === '已通过'"
               >
                 审核通过
               </el-button>
@@ -663,6 +679,8 @@
               >
                 退回修改
               </el-button>
+              <el-button type="primary" size="small" icon="Edit" @click="openResearchEdit(scope.row, 'software')">修改</el-button>
+              <el-button type="danger" size="small" icon="Delete" @click="handleDeleteRow(scope.row, 'software')">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -679,6 +697,65 @@
         </el-pagination>
       </div>
     </el-card>
+
+    <el-dialog
+      v-model="researchEditDialogVisible"
+      :title="`修改${getModuleName(currentEditModule)}数据`"
+      width="620px"
+      :close-on-click-modal="false"
+    >
+      <el-form
+        ref="researchEditFormRef"
+        :model="researchEditForm"
+        :rules="researchEditRules"
+        label-width="140px"
+      >
+        <el-form-item
+          v-for="field in currentEditFields"
+          :key="field.prop"
+          :label="field.label"
+          :prop="field.prop"
+        >
+          <el-date-picker
+            v-if="field.type === 'date'"
+            v-model="researchEditForm[field.prop]"
+            type="date"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            placeholder="请选择日期"
+            style="width: 100%;"
+          />
+          <el-select
+            v-else-if="field.options"
+            v-model="researchEditForm[field.prop]"
+            placeholder="请选择"
+            filterable
+            style="width: 100%;"
+          >
+            <el-option v-for="option in field.options" :key="option" :label="option" :value="option" />
+          </el-select>
+          <el-input-number
+            v-else-if="field.type === 'number'"
+            v-model="researchEditForm[field.prop]"
+            :min="0"
+            :step="field.step || 0.1"
+            :precision="field.precision"
+            controls-position="right"
+            style="width: 100%;"
+          />
+          <el-input
+            v-else
+            v-model="researchEditForm[field.prop]"
+            :placeholder="`请输入${field.label}`"
+            clearable
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="researchEditDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="researchEditSubmitting" @click="submitResearchEdit">保存</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 退回修改弹窗 -->
     <el-dialog 
@@ -818,6 +895,59 @@ export default {
           { min: 2, message: '请输入至少两个字', trigger: 'blur' }
         ]
       },
+      researchEditDialogVisible: false,
+      researchEditSubmitting: false,
+      currentEditModule: '',
+      researchEditForm: {},
+      researchEditFieldMap: {
+        subject: [
+          { prop: 'projectName', label: '项目名称' },
+          { prop: 'subjectType', label: '课题类型', options: ['国家自然科学基金', '省自然科学基金', '其它纵向项目', '横向项目'] },
+          { prop: 'money', label: '当年到位经费(万)', type: 'number', step: 0.1, precision: 2 },
+          { prop: 'execute_time_start', label: '执行开始时间', type: 'date' },
+          { prop: 'execute_time_end', label: '执行结束时间', type: 'date' },
+          { prop: 'rank', label: '业绩点分配比例', type: 'number', step: 0.1, precision: 2 },
+          { prop: 'coefficient', label: '系数', type: 'number', step: 0.1, precision: 2 }
+        ],
+        paper: [
+          { prop: 'title', label: '论文名称' },
+          { prop: 'journal', label: '出版刊物' },
+          { prop: 'publishTime', label: '出版时间', type: 'date' },
+          { prop: 'level', label: '论文级别', options: ['T1', 'T2', 'A类', 'B类', 'C类', '其他论文，撰写提交国家级纵向项目申报书'] },
+          { prop: 'rank', label: '业绩点分配比例', type: 'number', step: 0.1, precision: 2 },
+          { prop: 'coefficient', label: '系数', type: 'number', step: 0.1, precision: 2 }
+        ],
+        monograph: [
+          { prop: 'title', label: '论著名称' },
+          { prop: 'publisher', label: '出版社' },
+          { prop: 'publishTime', label: '出版时间', type: 'date' },
+          { prop: 'monographType', label: '论著类型', options: ['科技专著', '其他著作'] },
+          { prop: 'rank', label: '业绩点分配比例', type: 'number', step: 0.1, precision: 2 },
+          { prop: 'coefficient', label: '系数', type: 'number', step: 0.1, precision: 2 }
+        ],
+        award: [
+          { prop: 'name', label: '获奖名称' },
+          { prop: 'organizer', label: '颁奖单位' },
+          { prop: 'awardTime', label: '获奖时间', type: 'date' },
+          { prop: 'level', label: '奖励级别', options: ['1级', '2级', '3级', '4级', '5级', '6级', '7级', '8级'] },
+          { prop: 'rank', label: '业绩点分配比例', type: 'number', step: 0.1, precision: 2 },
+          { prop: 'coefficient', label: '系数', type: 'number', step: 0.1, precision: 2 }
+        ],
+        patent: [
+          { prop: 'name', label: '专利名称' },
+          { prop: 'type', label: '专利类型' },
+          { prop: 'applyTime', label: '申请时间', type: 'date' },
+          { prop: 'authorizeTime', label: '授权时间', type: 'date' },
+          { prop: 'rank', label: '业绩点分配比例', type: 'number', step: 0.1, precision: 2 },
+          { prop: 'coefficient', label: '系数', type: 'number', step: 0.1, precision: 2 }
+        ],
+        software: [
+          { prop: 'name', label: '软著名称' },
+          { prop: 'applyTime', label: '申请时间', type: 'date' },
+          { prop: 'authorizeTime', label: '授权时间', type: 'date' },
+          { prop: 'rank', label: '业绩点分配比例', type: 'number', step: 0.1, precision: 2 }
+        ]
+      },
     };
   },
 
@@ -835,7 +965,71 @@ export default {
     await this.initFilterData();
   },
 
+  computed: {
+    currentEditFields() {
+      return this.researchEditFieldMap[this.currentEditModule] || [];
+    },
+    researchEditRules() {
+      return this.currentEditFields.reduce((rules, field) => {
+        rules[field.prop] = [{ required: true, message: `请填写${field.label}`, trigger: field.type === 'date' || field.options ? 'change' : 'blur' }];
+        return rules;
+      }, {});
+    }
+  },
+
   methods: {
+    openResearchEdit(row, module) {
+      this.currentEditModule = module;
+      this.researchEditForm = JSON.parse(JSON.stringify(row));
+      this.researchEditDialogVisible = true;
+      this.$nextTick(() => this.$refs.researchEditFormRef?.clearValidate());
+    },
+
+    submitResearchEdit() {
+      this.$refs.researchEditFormRef.validate((valid) => {
+        if (!valid) return;
+
+        const updateApiMap = {
+          subject: updateSubject,
+          paper: updatePaper,
+          monograph: updateMonograph,
+          award: updateAward,
+          patent: updatePatent,
+          software: updateSoftware
+        };
+        const updateApi = updateApiMap[this.currentEditModule];
+        if (!updateApi) {
+          this.$message.error('未找到对应模块的修改接口');
+          return;
+        }
+
+        this.researchEditSubmitting = true;
+        updateApi(this.researchEditForm, true).then(res => {
+          if (res.code === 200) {
+            this.$message.success('修改成功');
+            this.researchEditDialogVisible = false;
+            this.refreshModuleData(this.currentEditModule);
+          } else {
+            this.$message.error(res.msg || '修改失败');
+          }
+        }).catch(() => {
+          this.$message.error('网络异常，请重试');
+        }).finally(() => {
+          this.researchEditSubmitting = false;
+        });
+      });
+    },
+
+    handleDeleteRow(row, module) {
+      this.$confirm(`确定删除这条${this.getModuleName(module)}数据吗？`, '警告', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => this.executeDelete(module, [row])).catch(() => {
+        this.$message.info('已取消删除');
+      });
+    },
+
     /**
      * 初始化筛选数据
      */
@@ -964,7 +1158,7 @@ export default {
         year: this.filterForm.year,
         deptId: this.filterForm.deptId,
         userId: this.filterForm.userId || undefined,
-        isAudit: true, //当前为审核页面，后端将过滤已审核通过的数据
+        isAudit: false, // 审核页显示全部审核状态的数据
       };
       console.log('传递给后端的参数：', params);
       
@@ -985,7 +1179,7 @@ export default {
         year: this.filterForm.year,
         deptId: this.filterForm.deptId,
         userId: this.filterForm.userId || undefined,
-        isAudit: true,
+        isAudit: false,
       };
 
       return this.getModuleData(
@@ -1003,7 +1197,7 @@ export default {
         year: this.filterForm.year,
         deptId: this.filterForm.deptId,
         userId: this.filterForm.userId || undefined,
-        isAudit: true,
+        isAudit: false,
       };
 
       return this.getModuleData(
@@ -1021,7 +1215,7 @@ export default {
         year: this.filterForm.year,
         deptId: this.filterForm.deptId,
         userId: this.filterForm.userId || undefined,
-        isAudit: true,
+        isAudit: false,
       };
 
       return this.getModuleData(
@@ -1039,7 +1233,7 @@ export default {
         year: this.filterForm.year,
         deptId: this.filterForm.deptId,
         userId: this.filterForm.userId || undefined,
-        isAudit: true,
+        isAudit: false,
       };
 
       return this.getModuleData(
@@ -1057,7 +1251,7 @@ export default {
         year: this.filterForm.year,
         deptId: this.filterForm.deptId,
         userId: this.filterForm.userId || undefined,
-        isAudit: true,
+        isAudit: false,
       };
 
       return this.getModuleData(

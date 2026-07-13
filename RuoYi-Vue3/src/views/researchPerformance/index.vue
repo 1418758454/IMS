@@ -1,5 +1,5 @@
 <template>
-  <div class="research-performance">
+  <div class="research-performance business-table-scroll-scope">
     <!-- 页面标题 -->
     <div class="page-header">
       <h2 class="main-title">科研业绩</h2>
@@ -107,7 +107,7 @@
           <template v-slot="scope"><span>{{ scope.row.coefficient }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="立项合同（PDF）" align="center" width="160">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -235,7 +235,7 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="论文原件（PDF）" align="center" width="160">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -364,7 +364,7 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="封面、目录及封底扫描件（PDF）" align="center" width="260">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -492,7 +492,7 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证书（PDF）" align="center" width="120">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -619,7 +619,7 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证书（PDF）" align="center" width="120">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -743,7 +743,7 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证书（PDF）" align="center" width="120">
           <template v-slot="scope">
             <!-- 有PDF时显示查看链接，无则显示“无” -->
             <el-link 
@@ -891,7 +891,7 @@
             ></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="立项合同（PDF）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"
@@ -950,7 +950,7 @@
             <el-input v-model="formData.rank" type="number" placeholder="请输入分配比例" step="0.01"></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="论文原件（PDF）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"
@@ -1008,7 +1008,7 @@
             <el-input v-model="formData.rank" type="number" placeholder="请输入分配比例" step="0.01"></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="封面、目录及封底扫描件（PDF）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"
@@ -1070,7 +1070,7 @@
             <el-input v-model="formData.rank" type="number" placeholder="请输入分配比例" step="0.01"></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="证书（PDF）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"
@@ -1127,7 +1127,7 @@
             <el-input v-model="formData.rank" type="number" placeholder="请输入分配比例" step="0.01"></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="证书（PDF）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"
@@ -1168,7 +1168,7 @@
             <el-input v-model="formData.rank" type="number" placeholder="请输入分配比例" step="0.01"></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="证书（PDF）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"

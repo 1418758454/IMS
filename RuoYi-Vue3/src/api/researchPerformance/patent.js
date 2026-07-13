@@ -55,8 +55,9 @@ export function deletePatent(ids) {
  * @param {string} data.applyTime - 申请时间（必填，格式：YYYY-MM-DD）
  * @param {string} data.authorizeTime - 授权时间（必填，格式：YYYY-MM-
  */
-export function updatePatent(data) {
+export function updatePatent(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/research/patent/update',
     method: 'put',
     data

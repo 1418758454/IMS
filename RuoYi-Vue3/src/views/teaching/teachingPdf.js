@@ -9,10 +9,13 @@ function showPdfMessage(message, type = 'warning') {
   });
 }
 
-export async function prepareTeachingPdf(row) {
+export async function prepareTeachingPdf(row, { required = true } = {}) {
   if (!row.pdfUrl && !row._pdfFile) {
-    showPdfMessage('请上传PDF证明材料');
-    return false;
+    if (required) {
+      showPdfMessage('请上传PDF证明材料');
+      return false;
+    }
+    return true;
   }
 
   if (row._pdfFile) {

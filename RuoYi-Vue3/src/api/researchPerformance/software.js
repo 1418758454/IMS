@@ -55,8 +55,9 @@ export function deleteSoftware(ids) {
  * @param {number} data.rank - 排名（必填）
  */
 
-export function updateSoftware(data) {
+export function updateSoftware(data, auditEdit = false) {
   return request({
+    params: { auditEdit },
     url: '/manage/research/software/update',
     method: 'put',
     data
