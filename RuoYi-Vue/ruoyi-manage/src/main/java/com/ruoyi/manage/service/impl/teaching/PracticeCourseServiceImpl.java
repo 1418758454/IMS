@@ -78,7 +78,6 @@ public class PracticeCourseServiceImpl extends ServiceImpl<PracticeCourseMapper,
 
 //        if(this.updateById(course)){
 //            // 更新总工作量
-//            practiceCourseService.countTotalWorkload(course.getUserId(), course.getYear());
 //            return true;
 //        }
         return this.updateById(course);
@@ -116,51 +115,5 @@ public class PracticeCourseServiceImpl extends ServiceImpl<PracticeCourseMapper,
     /**
      * 更新总工作量表的教学实践字段（practice_course_workload）
      */
-    @Override
-    public double countTotalWorkload(Long userId, Integer year) {
-        // 查询用户当年所有实践教学记录
-        List<PracticeCourse> allCourses = practiceCourseMapper.selectList(
-                new QueryWrapper<PracticeCourse>().eq("user_id", userId).eq("year", year)
-        );
 
-        // 查询用户当年已通过审核的实践教学记录
-        List<PracticeCourse> confirmedCourses = practiceCourseMapper.selectList(
-                new QueryWrapper<PracticeCourse>().eq("user_id", userId).eq("year", year).eq("status", "已通过")
-        );
-
-        // 计算预计总工作量（累加全部数据）
-        double estimatedTotal = allCourses.stream()
-                .mapToDouble(course -> countWorkload(userId, course))
-                .sum();
-
-        // 计算已确认总工作量（只累加审核状态为"已通过"的数据）
-        double confirmedTotal = confirmedCourses.stream()
-                .mapToDouble(course -> countWorkload(userId, course))
-                .sum();
-
-        // 3. 更新总工作量表（teaching_total_workload）的practice_course_workload字段
-        BasicInformation info = basicInformationService.getById(userId);
-        String username = info != null ? info.getName() : "";
-        QueryWrapper<TeachingTotalWorkload> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId).eq("year", year);
-        TeachingTotalWorkload teachingTotalWorkload = teachingTotalWorkloadMapper.selectOne(queryWrapper);
-
-        if (teachingTotalWorkload == null) {
-            // 新增总工作量记录
-            teachingTotalWorkload = new TeachingTotalWorkload();
-            teachingTotalWorkload.setUserId(BigDecimal.valueOf(userId));
-            teachingTotalWorkload.setUserName(username);
-            teachingTotalWorkload.setYear(year);
-            teachingTotalWorkload.setPracticalTeachingEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            teachingTotalWorkload.setPracticalTeachingConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.insert(teachingTotalWorkload);
-        } else {
-            // 更新已有记录
-            teachingTotalWorkload.setPracticalTeachingEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            teachingTotalWorkload.setPracticalTeachingConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.update(teachingTotalWorkload, queryWrapper);
-        }
-
-        return 0;
-    }
 }

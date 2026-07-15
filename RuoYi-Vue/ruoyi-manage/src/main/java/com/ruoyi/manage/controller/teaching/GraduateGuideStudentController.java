@@ -5,10 +5,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.teaching.GraduateGuideStudent;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.teaching.GraduateGuideStudentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -21,6 +25,9 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/manage/teaching/graduateGuideStudent") // 接口路径与表名对应
 public class GraduateGuideStudentController {
+
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
     @Autowired
     private GraduateGuideStudentService graduateGuideStudentService;
@@ -59,6 +66,7 @@ public class GraduateGuideStudentController {
 
     // 2. 新增指导记录（直接保存前端工作量，无需处理日期提取年份）
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addGraduateGuideStudent(@RequestBody GraduateGuideStudent guideStudent) {
         String userId = SecurityUtils.getUsername();
         String userName = basicInformationService.getByloginId(userId).getName();
@@ -71,7 +79,7 @@ public class GraduateGuideStudentController {
 
         boolean success = graduateGuideStudentService.addGraduateGuideStudent(guideStudent);
         if (success) {
-            graduateGuideStudentService.countTotalWorkload(guideStudent.getUserId(), guideStudent.getYear()); // 更新总工作量
+            workloadRefreshService.refreshTeaching(guideStudent.getUserId(), guideStudent.getYear());
         }
 
         return success ? AjaxResult.success("新增成功", guideStudent) : AjaxResult.error("新增失败");
@@ -79,21 +87,26 @@ public class GraduateGuideStudentController {
 
     // 3. 更新指导记录（直接保存前端工作量，无需日期提取年份）
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updateGraduateGuideStudent(@RequestBody GraduateGuideStudent guideStudent,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
+        GraduateGuideStudent originalGuideStudent = graduateGuideStudentService.getById(guideStudent.getId());
         String userId = SecurityUtils.getUsername();
         guideStudent.setUserId(Long.valueOf(userId));
         guideStudent.setUpdateTime(LocalDateTime.now());
 
-        Integer originalYear = guideStudent.getYear(); // 原始年份（用于总工作量更新）
+        Integer originalYear = originalGuideStudent.getYear(); // 原始年份（用于总工作量更新）
         // 将审核状态修改为待审核
         guideStudent.setStatus("待审核");
 
-        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(graduateGuideStudentService.getById(guideStudent.getId()), guideStudent, auditEdit);
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalGuideStudent, guideStudent, auditEdit);
         boolean success = graduateGuideStudentService.updateById(guideStudent);
 
         if (success) {
-            graduateGuideStudentService.countTotalWorkload(guideStudent.getUserId(), originalYear); // 更新总工作量
+            workloadRefreshService.refreshTeaching(Arrays.asList(
+                    WorkloadScope.of(originalGuideStudent.getUserId(), originalYear),
+                    WorkloadScope.of(guideStudent.getUserId(), guideStudent.getYear())
+            ));
         }
 
         return success ? AjaxResult.success("更新成功", guideStudent) : AjaxResult.error("更新失败");
@@ -101,13 +114,16 @@ public class GraduateGuideStudentController {
 
     // 4. 批量删除（复用架构）
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deleteGraduateGuideStudent(@RequestBody Long[] ids, @RequestParam Integer year) {
-        String userId = SecurityUtils.getUsername();
         List<Long> idList = Arrays.asList(ids);
+        List<GraduateGuideStudent> originals = graduateGuideStudentService.listByIds(idList);
         boolean success = graduateGuideStudentService.removeGraduateGuideStudentByIds(idList);
 
         if (success) {
-            graduateGuideStudentService.countTotalWorkload(Long.valueOf(userId), year); // 更新总工作量
+            workloadRefreshService.refreshTeaching(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
         }
 
         return success ? AjaxResult.success("删除成功") : AjaxResult.error("删除失败");
@@ -119,21 +135,22 @@ public class GraduateGuideStudentController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditGraduateGuideStudent(@RequestBody GraduateGuideStudent guideStudent) {
         try {
+            GraduateGuideStudent originalGuideStudent = graduateGuideStudentService.getById(guideStudent.getId());
             // 调用Service层审核方法
             boolean success = graduateGuideStudentService.auditGraduateGuideStudent(guideStudent.getId(), guideStudent.getStatus(), guideStudent.getRemark());
 
             if (success) {
                 String message = "已通过".equals(guideStudent.getStatus()) ? "审核通过成功" : "退回修改成功";
-                long id  = guideStudent.getId();
-                guideStudent = graduateGuideStudentService.getById(id);
-                graduateGuideStudentService.countTotalWorkload(guideStudent.getUserId(), guideStudent.getYear());
+                workloadRefreshService.refreshTeaching(originalGuideStudent.getUserId(), originalGuideStudent.getYear());
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

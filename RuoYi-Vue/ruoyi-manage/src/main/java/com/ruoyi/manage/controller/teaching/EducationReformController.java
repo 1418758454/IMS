@@ -6,10 +6,14 @@ import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.manage.domain.teaching.EducationReform;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.teaching.EducationReformPaper;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.teaching.EducationReformService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -26,6 +30,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 @RestController
 @RequestMapping("/manage/teaching/educationReform") // 接口路径：替换为教改项目
 public class EducationReformController {
+
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
     @Autowired
     private EducationReformService educationReformService;
@@ -65,6 +72,7 @@ public class EducationReformController {
 
     // 2. 新增项目（直接保存前端工作量，从endDate提取年份）
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addEducationReform(@RequestBody EducationReform reform) {
         if (StringUtils.isEmpty(reform.getPdfUrl())) {
             return AjaxResult.error("\u8bf7\u4e0a\u4f20PDF\u8bc1\u660e\u6750\u6599");
@@ -85,7 +93,7 @@ public class EducationReformController {
         boolean success = educationReformService.addEducationReform(reform);
 
         if (success) {
-            educationReformService.countTotalWorkload(reform.getUserId(), publishYear); // 更新总工作量
+            workloadRefreshService.refreshTeaching(reform.getUserId(), publishYear);
         }
 
         if (success && yearMismatch) {
@@ -97,8 +105,10 @@ public class EducationReformController {
 
     // 3. 更新项目（直接保存前端工作量，调整年份提取逻辑）
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updateEducationReform(@RequestBody EducationReform reform,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
+        EducationReform originalReform = educationReformService.getById(reform.getId());
         if (StringUtils.isEmpty(reform.getPdfUrl())) {
             return AjaxResult.error("\u8bf7\u4e0a\u4f20PDF\u8bc1\u660e\u6750\u6599");
         }
@@ -108,22 +118,22 @@ public class EducationReformController {
 
         // 核心：从endDate提取年份（替换科技创新的endYear）
         Integer newYear = reform.getEndDate().getYear();
-        Integer originalYear = reform.getYear(); // 原始年份（用于总工作量更新
+        Integer originalYear = originalReform.getYear(); // 原始年份（用于总工作量更新
         boolean yearChanged = !originalYear.equals(newYear);
 
         reform.setYear(newYear); // 更新年份字段
         // 将审核状态修改为待审核
         reform.setStatus("待审核");
 
-        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(educationReformService.getById(reform.getId()), reform, auditEdit);
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalReform, reform, auditEdit);
         boolean success = educationReformService.updateById(reform);
         if (success) {
             // 年份变更时，更新原年份和新年份的总工作量
             if (!originalYear.equals(newYear)) {
-                educationReformService.countTotalWorkload(reform.getUserId(), originalYear); // 原年份
-                educationReformService.countTotalWorkload(reform.getUserId(), newYear);     // 新年份
+                workloadRefreshService.refreshTeaching(originalReform.getUserId(), originalYear);
+                workloadRefreshService.refreshTeaching(reform.getUserId(), newYear);
             } else {
-                educationReformService.countTotalWorkload(reform.getUserId(), newYear); // 未变更则仅更新当前年份
+                workloadRefreshService.refreshTeaching(reform.getUserId(), newYear);
             }
         }
 
@@ -136,14 +146,17 @@ public class EducationReformController {
 
     // 4. 批量删除（复用科技创新逻辑，替换Service方法）
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deleteEducationReform(@RequestBody Long[] ids, @RequestParam Integer year) {
-        String userId = SecurityUtils.getUsername();
         List<Long> idList = Arrays.asList(ids);
+        List<EducationReform> originals = educationReformService.listByIds(idList);
         boolean success = educationReformService.removeEducationReformByIds(idList);
 
         if (success) {
             // 删除后更新总工作量
-            educationReformService.countTotalWorkload(Long.valueOf(userId), year);
+            workloadRefreshService.refreshTeaching(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
         }
 
         return success ? AjaxResult.success("删除成功") : AjaxResult.error("删除失败");
@@ -155,21 +168,22 @@ public class EducationReformController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditEducationReform(@RequestBody EducationReform reform) {
         try {
+            EducationReform originalReform = educationReformService.getById(reform.getId());
             // 调用Service层审核方法
             boolean success = educationReformService.auditEducationReform(reform.getId(), reform.getStatus(), reform.getRemark());
 
             if (success) {
                 String message = "已通过".equals(reform.getStatus()) ? "审核通过成功" : "退回修改成功";
-                long id  = reform.getId();
-                reform = educationReformService.getById(id);
-                educationReformService.countTotalWorkload(reform.getUserId(), reform.getYear());
+                workloadRefreshService.refreshTeaching(originalReform.getUserId(), originalReform.getYear());
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

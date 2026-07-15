@@ -43,7 +43,8 @@
      -- 7. 科研总工作量
                                 total_workload DECIMAL(12, 3) DEFAULT 0.000 COMMENT '科研总工作量',
     -- 索引：支持按用户名查询
-                                KEY idx_user_name (user_name)
+                                KEY idx_user_name (user_name),
+                                UNIQUE KEY uk_research_total_user_year (user_id, `year`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科研总工作量统计表';
 
 /**
@@ -98,7 +99,8 @@ CREATE TABLE teaching_total_workload (
     -- 13. 教学总工作量
                                 total_workload DECIMAL(12, 3) DEFAULT 0.000 COMMENT '教学总工作量',
     -- 索引：支持按用户名查询
-                                KEY idx_user_name (user_name)
+                                KEY idx_user_name (user_name),
+                                UNIQUE KEY uk_teaching_total_user_year (user_id, `year`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='教学总工作量统计表（含理论课、实践课等多维度工作量）';
 
 

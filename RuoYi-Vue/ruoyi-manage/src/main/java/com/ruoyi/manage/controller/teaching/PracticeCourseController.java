@@ -5,12 +5,16 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.teaching.PracticeCourse;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.teaching.PracticeCourseService;
 import com.ruoyi.manage.utils.AdminAuditUpdateUtils;
 import com.ruoyi.manage.service.teaching.TeachingTaskScreenshotAttachmentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -33,6 +37,8 @@ public class PracticeCourseController {
     private BasicInformationService basicInformationService;
     @Autowired
     private TeachingTaskScreenshotAttachmentService taskScreenshotAttachmentService;
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
 
     /**
@@ -77,6 +83,7 @@ public class PracticeCourseController {
      * @return 新增结果（成功/失败）
      */
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addPracticeCourse(@RequestBody PracticeCourse course) {
         String userId = SecurityUtils.getUsername();
         if (!taskScreenshotAttachmentService.hasAttachment(Long.valueOf(userId), course.getYear(), "practice")) {
@@ -96,7 +103,7 @@ public class PracticeCourseController {
         boolean success = practiceCourseService.addPracticeCourse(course);
         if (success) {
             // 更新当前用户的当前年度的教学实践模块总工作量
-            practiceCourseService.countTotalWorkload(course.getUserId(), course.getYear());
+            workloadRefreshService.refreshTeaching(course.getUserId(), course.getYear());
         }
 
         return success ? AjaxResult.success("新增教学实践成功", course) : AjaxResult.error("新增教学实践失败");
@@ -108,13 +115,15 @@ public class PracticeCourseController {
      * @return 删除结果（成功/失败）
      */
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deletePracticeCourse(@RequestBody Long[] ids, @RequestParam(required = false) Integer year) {
-        String userId = SecurityUtils.getUsername();
-
+        List<PracticeCourse> originals = practiceCourseService.listByIds(Arrays.asList(ids));
         boolean success = practiceCourseService.removePracticeCourseByIds(Arrays.asList(ids));
         if (success) {
             // 删除成功后更新总工作量
-            practiceCourseService.countTotalWorkload(Long.valueOf(userId), year);
+            workloadRefreshService.refreshTeaching(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
         }
         return success ? AjaxResult.success("删除教学实践成功") : AjaxResult.error("删除教学实践失败");
     }
@@ -125,8 +134,10 @@ public class PracticeCourseController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updatePracticeCourse(@RequestBody PracticeCourse course,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
+        PracticeCourse originalCourse = practiceCourseService.getById(course.getId());
         String userId = SecurityUtils.getUsername();
         course.setUserId(Long.valueOf(userId)); // 设置当前用户ID
         // 重新计算工作量（字段替换为planDays和classCount）
@@ -137,11 +148,14 @@ public class PracticeCourseController {
         // 将审核状态修改为待审核
         course.setStatus("待审核");
 
-        AdminAuditUpdateUtils.preserve(practiceCourseService.getById(course.getId()), course, auditEdit);
+        AdminAuditUpdateUtils.preserve(originalCourse, course, auditEdit);
         boolean success = practiceCourseService.updateById(course);
         if (success) {
             // 更新总工作量
-            practiceCourseService.countTotalWorkload(course.getUserId(), course.getYear());
+            workloadRefreshService.refreshTeaching(Arrays.asList(
+                    WorkloadScope.of(originalCourse.getUserId(), originalCourse.getYear()),
+                    WorkloadScope.of(course.getUserId(), course.getYear())
+            ));
         }
         return success ? AjaxResult.success("更新教学实践成功", course) : AjaxResult.error("更新教学实践失败");
     }
@@ -152,21 +166,22 @@ public class PracticeCourseController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditPracticeCourse(@RequestBody PracticeCourse course) {
         try {
+            PracticeCourse originalCourse = practiceCourseService.getById(course.getId());
             // 调用Service层审核方法
             boolean success = practiceCourseService.auditPracticeCourse(course.getId(), course.getStatus(), course.getRemark());
 
             if (success) {
                 String message = "已通过".equals(course.getStatus()) ? "审核通过成功" : "退回修改成功";
-                long id  = course.getId();
-                course = practiceCourseService.getById(id);
-                practiceCourseService.countTotalWorkload(course.getUserId(), course.getYear());
+                workloadRefreshService.refreshTeaching(originalCourse.getUserId(), originalCourse.getYear());
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

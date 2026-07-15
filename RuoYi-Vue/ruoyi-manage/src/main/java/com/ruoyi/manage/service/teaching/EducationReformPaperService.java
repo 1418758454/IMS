@@ -29,7 +29,6 @@ public interface EducationReformPaperService extends IService<EducationReformPap
     /**
      * 计算并更新用户的教改论文总工作量（写入总工作量表）
      */
-    double countTotalWorkload(Long userId, Integer year);
 
 
     double countWorkload(Long userId, EducationReformPaper paper);

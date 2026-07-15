@@ -56,8 +56,6 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, ResearchPaper> im
         paper.setYear(paper.getPublishTime().toString().substring(0,4));
         if(paperMapper.insert(paper) > 0){
             // 计算模块总工作量
-            countTotalConfirmedWorkload(paper.getUserId(), paper.getYear());
-            countTotalEstimatedWorkload(paper.getUserId(), paper.getYear());
             return true;
         }
         return false;
@@ -89,8 +87,6 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, ResearchPaper> im
         // 3. 删除数据库记录
         if(paperMapper.deleteBatchIds(ids) > 0){
             // 计算模块总工作量
-            countTotalConfirmedWorkload(userId, year);
-            countTotalEstimatedWorkload(userId, year);
             return true;
         }
         return false;
@@ -135,95 +131,12 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, ResearchPaper> im
 
         if(this.updateById(paper)){
             // 计算模块总工作量
-            countTotalConfirmedWorkload(paper.getUserId(), paper.getYear());
-            countTotalEstimatedWorkload(paper.getUserId(), paper.getYear());
             return true;
         }
         return false;
     }
 
-    @Override
-    public void countTotalConfirmedWorkload(Long userId, String year) {
-        QueryWrapper<ResearchPaper> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId);
 
-        // 按年份筛选
-        if (StringUtils.isNotBlank(year)) {
-            queryWrapper.eq("year", year);
-        }
 
-        // 只计算状态为"已通过"的记录
-        queryWrapper.eq("status", "已通过");
 
-        // 使用 MyBatis-Plus 的聚合查询计算工作量总和
-        List<ResearchPaper> confirmedPapers = paperMapper.selectList(queryWrapper);
-
-        // 计算总工作量
-        BigDecimal total = BigDecimal.ZERO;
-        for (ResearchPaper paper : confirmedPapers) {
-            if (paper.getWorkload() != null) {
-                total = total.add(paper.getWorkload());
-            }
-        }
-
-        // 更新总工作量表
-        BasicInformation user = basicInformationService.getById(userId);
-        ResearchTotalWorkload totalWorkload = totalWorkloadMapper.selectOne(
-                new QueryWrapper<ResearchTotalWorkload>().eq("user_id", userId).eq("year", year)
-        );
-
-        if (totalWorkload == null) { //查看总表是否已有记录，没有就创建，有则更新
-            totalWorkload = new ResearchTotalWorkload();
-            totalWorkload.setUserId(BigDecimal.valueOf(userId));
-            totalWorkload.setUserName(user.getName());
-            totalWorkload.setYear(year);
-            totalWorkload.setPaperConfirmedWorkload(total);
-            totalWorkloadMapper.insert(totalWorkload);
-        } else {
-            totalWorkload.setPaperConfirmedWorkload(total);
-            totalWorkloadMapper.update(totalWorkload, new QueryWrapper<ResearchTotalWorkload>()
-                    .eq("user_id", userId).eq("year", year));
-        }
-    }
-
-    @Override
-    public void countTotalEstimatedWorkload(Long userId, String year) {
-        QueryWrapper<ResearchPaper> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId);
-
-        // 按年份筛选
-        if (StringUtils.isNotBlank(year)) {
-            queryWrapper.eq("year", year);
-        }
-
-        // 使用 MyBatis-Plus 的聚合查询计算工作量总和
-        List<ResearchPaper> allPapers = paperMapper.selectList(queryWrapper);
-
-        // 计算总工作量
-        BigDecimal total = BigDecimal.ZERO;
-        for (ResearchPaper paper : allPapers) {
-            if (paper.getWorkload() != null) {
-                total = total.add(paper.getWorkload());
-            }
-        }
-
-        // 更新总工作量表
-        BasicInformation user = basicInformationService.getById(userId);
-        ResearchTotalWorkload totalWorkload = totalWorkloadMapper.selectOne(
-                new QueryWrapper<ResearchTotalWorkload>().eq("user_id", userId).eq("year", year)
-        );
-
-        if (totalWorkload == null) { //查看总表是否已有记录，没有就创建，有则更新
-            totalWorkload = new ResearchTotalWorkload();
-            totalWorkload.setUserId(BigDecimal.valueOf(userId));
-            totalWorkload.setUserName(user.getName());
-            totalWorkload.setYear(year);
-            totalWorkload.setPaperEstimatedWorkload(total);
-            totalWorkloadMapper.insert(totalWorkload);
-        } else {
-            totalWorkload.setPaperEstimatedWorkload(total);
-            totalWorkloadMapper.update(totalWorkload, new QueryWrapper<ResearchTotalWorkload>()
-                    .eq("user_id", userId).eq("year", year));
-        }
-    }
 }

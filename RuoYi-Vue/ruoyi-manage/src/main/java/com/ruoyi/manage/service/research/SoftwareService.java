@@ -27,7 +27,5 @@ public interface SoftwareService extends IService<ResearchSoftware> {
 
     boolean auditSoftware(Long id, String status, String remark);
 
-    void countTotalConfirmedWorkload(Long userId, String year);
 
-    void countTotalEstimatedWorkload(Long userId, String year);
 }

@@ -78,7 +78,6 @@ public class GraduateGuideStudentServiceImpl extends ServiceImpl<GraduateGuideSt
 
 //        if(this.updateById(guideStudent)){
 //            // 更新总工作量
-//            graduateGuideStudentService.countTotalWorkload(guideStudent.getUserId(), guideStudent.getYear());
 //            return true;
 //        }
         return this.updateById(guideStudent);
@@ -99,54 +98,5 @@ public class GraduateGuideStudentServiceImpl extends ServiceImpl<GraduateGuideSt
     }
 
     // 计算模块总工作量（直接累加前端输入的workload）
-    @Override
-    public double countTotalWorkload(Long userId, Integer year) {
-        // 查询用户当年所有指导学生记录
-        List<GraduateGuideStudent> allGuideStudents = graduateGuideStudentMapper.selectList(
-                new QueryWrapper<GraduateGuideStudent>().eq("user_id", userId).eq("year", year)
-        );
 
-        // 查询用户当年已通过审核的指导学生记录
-        List<GraduateGuideStudent> confirmedGuideStudents = graduateGuideStudentMapper.selectList(
-                new QueryWrapper<GraduateGuideStudent>().eq("user_id", userId).eq("year", year).eq("status", "已通过")
-        );
-
-        // 计算预计总工作量（累加全部数据）
-        double estimatedTotal = allGuideStudents.stream()
-                .mapToDouble(guide -> guide.getWorkload().doubleValue())
-                .sum();
-        estimatedTotal = Math.round(estimatedTotal * 1000.0) / 1000.0;
-
-        // 计算已确认总工作量（只累加审核状态为"已通过"的数据）
-        double confirmedTotal = confirmedGuideStudents.stream()
-                .mapToDouble(guide -> guide.getWorkload().doubleValue())
-                .sum();
-        confirmedTotal = Math.round(confirmedTotal * 1000.0) / 1000.0;
-
-        // 3. 更新总工作量表（TeachingTotalWorkload）的对应字段
-        BasicInformation basicInfo = basicInformationService.getById(userId);
-        String username = basicInfo != null ? basicInfo.getName() : "";
-
-        QueryWrapper<TeachingTotalWorkload> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId).eq("year", year);
-        TeachingTotalWorkload totalWorkloadRecord = teachingTotalWorkloadMapper.selectOne(queryWrapper);
-
-        if (totalWorkloadRecord == null) {
-            // 新增总工作量记录（研究生指导学生对应字段：graduateGuideStudentWorkload）
-            totalWorkloadRecord = new TeachingTotalWorkload();
-            totalWorkloadRecord.setUserId(BigDecimal.valueOf(userId));
-            totalWorkloadRecord.setUserName(username);
-            totalWorkloadRecord.setYear(year);
-            totalWorkloadRecord.setGraduateGuideStudentEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalWorkloadRecord.setGraduateGuideStudentConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.insert(totalWorkloadRecord);
-        } else {
-            // 更新总工作量记录
-            totalWorkloadRecord.setGraduateGuideStudentEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalWorkloadRecord.setGraduateGuideStudentConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.update(totalWorkloadRecord, queryWrapper);
-        }
-
-        return 0;
-    }
 }

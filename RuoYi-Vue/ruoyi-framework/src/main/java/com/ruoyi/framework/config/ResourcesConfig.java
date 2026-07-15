@@ -29,6 +29,10 @@ public class ResourcesConfig implements WebMvcConfigurer
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry)
     {
+        /** 证明材料沿用系统原有的单层 /profile/pdf 访问地址 */
+        registry.addResourceHandler(Constants.RESOURCE_PREFIX + "/pdf/**")
+                .addResourceLocations("file:" + RuoYiConfig.getProfile() + "/profile/pdf/");
+
         /** 本地文件上传路径 */
         registry.addResourceHandler(Constants.RESOURCE_PREFIX + "/**")
                 .addResourceLocations("file:" + RuoYiConfig.getProfile() + "/");

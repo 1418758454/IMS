@@ -5,10 +5,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.research.ResearchSubject;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.research.SubjectService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -30,6 +34,9 @@ public class SubjectController {
 
     @Autowired
     private BasicInformationService basicInformationService;
+
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
     /**
      * 1. 获取课题列表（分页+条件查询）
@@ -81,6 +88,7 @@ public class SubjectController {
      * @return 新增结果（成功/失败）
      */
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addSubject(@RequestBody ResearchSubject subject) {
         // 获取登录用户名
         String userId = SecurityUtils.getUsername();
@@ -104,6 +112,9 @@ public class SubjectController {
 
         // 给登录用户新增课题
         boolean success = subjectService.addSubject(subject);
+        if (success) {
+            workloadRefreshService.refreshResearch(subject.getUserId(), subject.getYear());
+        }
         return success ? AjaxResult.success("新增课题成功") : AjaxResult.error("新增课题失败");
 
     }
@@ -114,8 +125,15 @@ public class SubjectController {
      * @return 删除结果（成功/失败）
      */
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deleteSubject(@RequestBody Long[] ids) {
+        List<ResearchSubject> originals = subjectService.listByIds(Arrays.asList(ids));
         boolean success = subjectService.removeSubjectByIds(Arrays.asList(ids));
+        if (success) {
+            workloadRefreshService.refreshResearch(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
+        }
         return success ? AjaxResult.success("删除课题成功") : AjaxResult.error("删除课题失败");
     }
 
@@ -125,8 +143,10 @@ public class SubjectController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updateSubject(@RequestBody ResearchSubject subject,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
+        ResearchSubject originalSubject = subjectService.getById(subject.getId());
         System.out.println("更新课题:"+subject.getUserId());
         // 获取登录用户名
         String userId = SecurityUtils.getUsername();
@@ -146,8 +166,14 @@ public class SubjectController {
         subject.setStatus("待审核");
 
         // 更新课题信息
-        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(subjectService.getById(subject.getId()), subject, auditEdit);
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalSubject, subject, auditEdit);
         boolean success = subjectService.updateSubject(subject);
+        if (success) {
+            workloadRefreshService.refreshResearch(Arrays.asList(
+                    WorkloadScope.of(originalSubject.getUserId(), originalSubject.getYear()),
+                    WorkloadScope.of(subject.getUserId(), subject.getYear())
+            ));
+        }
         return success ? AjaxResult.success("更新课题成功") : AjaxResult.error("更新课题失败");
     }
 
@@ -157,8 +183,10 @@ public class SubjectController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditSubject(@RequestBody ResearchSubject subject) {
         try {
+            ResearchSubject originalSubject = subjectService.getById(subject.getId());
             // 获取审核人（当前登录用户）
 //            String auditor = SecurityUtils.getUsername();
 
@@ -166,12 +194,14 @@ public class SubjectController {
             boolean success = subjectService.auditSubject(subject.getId(), subject.getStatus(), subject.getRemark());
 
             if (success) {
+                workloadRefreshService.refreshResearch(originalSubject.getUserId(), originalSubject.getYear());
                 String message = "已通过".equals(subject.getStatus()) ? "审核通过成功" : "退回修改成功";
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

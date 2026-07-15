@@ -52,7 +52,6 @@ public interface GraduateTheoryCourseService extends IService<GraduateTheoryCour
      * @param year   授课年份
      * @return 总工作量数值
      */
-    double countTotalWorkload(Long userId, Integer year);
 
     IPage<GraduateTheoryCourse> getGraduateTheoryCoursePageByUserIds(Integer pageNum, Integer pageSize, List<String> userIds, Integer year, Boolean isAudit);
 

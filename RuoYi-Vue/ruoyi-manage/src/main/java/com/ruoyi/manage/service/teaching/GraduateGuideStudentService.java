@@ -19,7 +19,6 @@ public interface GraduateGuideStudentService extends IService<GraduateGuideStude
     boolean removeGraduateGuideStudentByIds(List<Long> ids);
 
     // 计算模块总工作量（累加前端输入的workload）
-    double countTotalWorkload(Long userId, Integer year);
 
     IPage<GraduateGuideStudent> getGraduateGuideStudentPageByUserIds(Integer pageNum, Integer pageSize, List<String> userIds, Integer year, Boolean isAudit);
 

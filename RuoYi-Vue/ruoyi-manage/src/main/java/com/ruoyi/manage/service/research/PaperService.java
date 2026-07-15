@@ -28,7 +28,5 @@ public interface PaperService extends IService<ResearchPaper> {
 
     boolean auditPaper(Long id, String status, String remark);
 
-    void countTotalConfirmedWorkload(Long userId, String year);
 
-    void countTotalEstimatedWorkload(Long userId, String year);
 }

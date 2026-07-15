@@ -87,7 +87,6 @@ public class EducationReformPaperServiceImpl extends ServiceImpl<EducationReform
 
 //        if(this.updateById(paper)){
 //            // 更新总工作量
-//            educationReformPaperService.countTotalWorkload(paper.getUserId(), paper.getYear());
 //            return true;
 //        }
         return this.updateById(paper);
@@ -145,53 +144,7 @@ public class EducationReformPaperServiceImpl extends ServiceImpl<EducationReform
     /**
      * 计算总工作量（直接累加workload字段，无需重新计算，与科技创新逻辑差异点）
      */
-    @Override
-    public double countTotalWorkload(Long userId, Integer year) {
-        // 查询用户当年所有教改论文记录
-        List<EducationReformPaper> allPapers = educationReformPaperMapper.selectList(
-                new QueryWrapper<EducationReformPaper>().eq("user_id", userId).eq("year", year)
-        );
 
-        // 查询用户当年已通过审核的教改论文记录
-        List<EducationReformPaper> confirmedPapers = educationReformPaperMapper.selectList(
-                new QueryWrapper<EducationReformPaper>().eq("user_id", userId).eq("year", year).eq("status", "已通过")
-        );
-
-        // 计算预计总工作量（累加全部数据）
-        double estimatedTotal = allPapers.stream()
-                .mapToDouble(paper -> countWorkload(userId, paper))
-                .sum();
-
-        // 计算已确认总工作量（只累加审核状态为"已通过"的数据）
-        double confirmedTotal = confirmedPapers.stream()
-                .mapToDouble(paper -> countWorkload(userId, paper))
-                .sum();
-
-
-        // 3. 更新总工作量表（复用科技创新的总表更新逻辑）
-        BasicInformation basicInfo = basicInformationService.getById(userId);
-        String username = basicInfo != null ? basicInfo.getName() : "";
-
-        QueryWrapper<TeachingTotalWorkload> totalWrapper = new QueryWrapper<>();
-        totalWrapper.eq("user_id", userId).eq("year", year);
-        TeachingTotalWorkload totalRecord = teachingTotalWorkloadMapper.selectOne(totalWrapper);
-
-        if (totalRecord == null) {
-            totalRecord = new TeachingTotalWorkload();
-            totalRecord.setUserId(BigDecimal.valueOf(userId));
-            totalRecord.setUserName(username);
-            totalRecord.setYear(year);
-            totalRecord.setEducationReformPaperEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalRecord.setEducationReformPaperConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.insert(totalRecord);
-        } else {
-            totalRecord.setEducationReformPaperEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalRecord.setEducationReformPaperConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.update(totalRecord, totalWrapper);
-        }
-
-        return 0;
-    }
 
 
 }

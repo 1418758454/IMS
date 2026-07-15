@@ -27,7 +27,5 @@ public interface MonographService extends IService<ResearchMonograph> {
 
     boolean auditMonograph(Long id, String status, String remark);
 
-    void countTotalConfirmedWorkload(Long userId, String year);
 
-    void countTotalEstimatedWorkload(Long userId, String year);
 }

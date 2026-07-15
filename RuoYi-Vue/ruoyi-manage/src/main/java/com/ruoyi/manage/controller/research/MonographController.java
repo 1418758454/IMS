@@ -5,10 +5,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.research.ResearchMonograph;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.research.MonographService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -30,6 +34,9 @@ public class MonographController {
 
     @Autowired
     private BasicInformationService basicInformationService; // 注入基本信息Service
+
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
     /**
      * 1. 获取论著列表（分页+条件查询）
@@ -73,6 +80,7 @@ public class MonographController {
      * @return 新增结果（成功/失败）
      */
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addMonograph(@RequestBody ResearchMonograph monograph) {
         String userId = SecurityUtils.getUsername();
         String userName = basicInformationService.getByloginId(userId).getName();
@@ -91,6 +99,9 @@ public class MonographController {
         // 查看论文发表年份与当前页面年份是否一致
         boolean x = !monograph.getYear().equals(monograph.getPublishTime().toString().substring(0,4));
         boolean success = monographService.addMonograph(monograph); // 调用Service新增方法
+        if (success) {
+            workloadRefreshService.refreshResearch(monograph.getUserId(), monograph.getYear());
+        }
 
         if(success && x){
             return AjaxResult.success("新增论著成功,请选择"+monograph.getYear()+"年页面查看", monograph);
@@ -106,8 +117,15 @@ public class MonographController {
      * @return 删除结果（成功/失败）
      */
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deleteMonograph(@RequestBody Long[] ids) {
+        List<ResearchMonograph> originals = monographService.listByIds(Arrays.asList(ids));
         boolean success = monographService.removeMonographByIds(Arrays.asList(ids));
+        if (success) {
+            workloadRefreshService.refreshResearch(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
+        }
         return success ? AjaxResult.success("删除论著成功") : AjaxResult.error("删除论著失败");
     }
 
@@ -117,8 +135,10 @@ public class MonographController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updateMonograph(@RequestBody ResearchMonograph monograph,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
+        ResearchMonograph originalMonograph = monographService.getById(monograph.getId());
         String userId = SecurityUtils.getUsername();
         monograph.setUserId(Long.valueOf(userId));
         monograph.setUpdateTime(LocalDateTime.now());
@@ -130,7 +150,7 @@ public class MonographController {
         monograph.setWorkload(workload);
 
         // 2. 保存原始年份（关键：用于后续旧年份总工作量更新）
-        Integer originalYear = Integer.valueOf(monograph.getYear()); // 旧年份
+        Integer originalYear = Integer.valueOf(originalMonograph.getYear()); // 旧年份
         Integer newYear = Integer.valueOf(monograph.getPublishTime().toString().substring(0, 4)); // 从出版时间提取新年份
         boolean yearChanged = !originalYear.equals(newYear); // 判断年份是否变更
 
@@ -143,15 +163,12 @@ public class MonographController {
         // 4. 执行数据库更新
 //        boolean success = monographService.updateById(monograph);
         boolean success = false;
-        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(monographService.getById(monograph.getId()), monograph, auditEdit);
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalMonograph, monograph, auditEdit);
         if(monographService.updateById(monograph)){
-            // 计算模块总工作量
-            monographService.countTotalConfirmedWorkload(monograph.getUserId(), monograph.getYear());
-            monographService.countTotalEstimatedWorkload(monograph.getUserId(), monograph.getYear());
-            if (yearChanged) {
-                monographService.countTotalConfirmedWorkload(monograph.getUserId(), String.valueOf(originalYear));
-                monographService.countTotalEstimatedWorkload(monograph.getUserId(), String.valueOf(originalYear));
-            }
+            workloadRefreshService.refreshResearch(Arrays.asList(
+                    WorkloadScope.of(originalMonograph.getUserId(), originalMonograph.getYear()),
+                    WorkloadScope.of(monograph.getUserId(), monograph.getYear())
+            ));
             success = true;
         }
 
@@ -169,18 +186,22 @@ public class MonographController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditMonograph(@RequestBody ResearchMonograph monograph) {
         try {
+            ResearchMonograph originalMonograph = monographService.getById(monograph.getId());
             // 调用Service层审核方法
             boolean success = monographService.auditMonograph(monograph.getId(), monograph.getStatus(), monograph.getRemark());
 
             if (success) {
+                workloadRefreshService.refreshResearch(originalMonograph.getUserId(), originalMonograph.getYear());
                 String message = "已通过".equals(monograph.getStatus()) ? "审核通过成功" : "退回修改成功";
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

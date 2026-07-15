@@ -5,10 +5,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.teaching.Proctor;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.teaching.ProctorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -24,6 +28,9 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/manage/teaching/proctor") // 监考模块接口根路径
 public class ProctorController {
+
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
     @Autowired
     private ProctorService proctorService; // 注入监考Service
@@ -66,6 +73,7 @@ public class ProctorController {
      * 2. 新增监考记录
      */
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addProctor(@RequestBody Proctor proctor) {
         String userId = SecurityUtils.getUsername();
         String userName = basicInformationService.getByloginId(userId).getName();
@@ -81,7 +89,7 @@ public class ProctorController {
 
         boolean success = proctorService.addProctor(proctor);
         if (success) {
-            proctorService.countTotalWorkload(proctor.getUserId(), proctor.getYear()); // 更新总工作量
+            workloadRefreshService.refreshTeaching(proctor.getUserId(), proctor.getYear());
         }
 
         return success ? AjaxResult.success("新增监考记录成功", proctor) : AjaxResult.error("新增监考记录失败");
@@ -91,12 +99,14 @@ public class ProctorController {
      * 3. 删除监考记录（支持批量删除）
      */
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deleteProctor(@RequestBody Long[] ids, @RequestParam(required = false) Integer year) {
-        String userId = SecurityUtils.getUsername();
-
+        List<Proctor> originals = proctorService.listByIds(Arrays.asList(ids));
         boolean success = proctorService.removeProctorByIds(Arrays.asList(ids));
         if (success) {
-            proctorService.countTotalWorkload(Long.valueOf(userId), year); // 更新总工作量
+            workloadRefreshService.refreshTeaching(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
         }
 
         return success ? AjaxResult.success("删除监考记录成功") : AjaxResult.error("删除监考记录失败");
@@ -106,8 +116,10 @@ public class ProctorController {
      * 4. 更新监考记录
      */
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updateProctor(@RequestBody Proctor proctor,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
+        Proctor originalProctor = proctorService.getById(proctor.getId());
         String userId = SecurityUtils.getUsername();
         proctor.setUserId(Long.valueOf(userId));
 
@@ -119,10 +131,13 @@ public class ProctorController {
         // 将审核状态修改为待审核
         proctor.setStatus("待审核");
 
-        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(proctorService.getById(proctor.getId()), proctor, auditEdit);
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalProctor, proctor, auditEdit);
         boolean success = proctorService.updateById(proctor);
         if (success) {
-            proctorService.countTotalWorkload(proctor.getUserId(), proctor.getYear());
+            workloadRefreshService.refreshTeaching(Arrays.asList(
+                    WorkloadScope.of(originalProctor.getUserId(), originalProctor.getYear()),
+                    WorkloadScope.of(proctor.getUserId(), proctor.getYear())
+            ));
         }
 
         return success ? AjaxResult.success("更新监考记录成功", proctor) : AjaxResult.error("更新监考记录失败");
@@ -134,21 +149,22 @@ public class ProctorController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditProctor(@RequestBody Proctor proctor) {
         try {
+            Proctor originalProctor = proctorService.getById(proctor.getId());
             // 调用Service层审核方法
             boolean success = proctorService.auditProctor(proctor.getId(), proctor.getStatus(), proctor.getRemark());
 
             if (success) {
                 String message = "已通过".equals(proctor.getStatus()) ? "审核通过成功" : "退回修改成功";
-                long id  = proctor.getId();
-                proctor = proctorService.getById(id);
-                proctorService.countTotalWorkload(proctor.getUserId(), proctor.getYear());
+                workloadRefreshService.refreshTeaching(originalProctor.getUserId(), originalProctor.getYear());
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

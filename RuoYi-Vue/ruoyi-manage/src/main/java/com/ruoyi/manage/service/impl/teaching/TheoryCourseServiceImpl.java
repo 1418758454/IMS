@@ -92,7 +92,6 @@ public class TheoryCourseServiceImpl extends ServiceImpl<TheoryCourseMapper, Und
 
 //        if(this.updateById(course)){
 //            // 更新总工作量
-//            countTotalWorkload(course.getUserId(), course.getYear());
 //            return true;
 //        }
         return this.updateById(course);
@@ -141,56 +140,7 @@ public class TheoryCourseServiceImpl extends ServiceImpl<TheoryCourseMapper, Und
 
     }
 
-    @Override
-    public double countTotalWorkload(Long userId, Integer year) {
-        // 查询用户当年所有理论课记录
-        List<UndergraduateTheoryCourse> allCourses = theoryCourseMapper.selectList(
-                new QueryWrapper<UndergraduateTheoryCourse>().eq("user_id", userId).eq("year", year)
-        );
 
-        // 查询用户当年已通过审核的理论课记录
-        List<UndergraduateTheoryCourse> confirmedCourses = theoryCourseMapper.selectList(
-                new QueryWrapper<UndergraduateTheoryCourse>().eq("user_id", userId).eq("year", year).eq("status", "已通过")
-        );
-
-        // 计算预计总工作量（累加全部数据）
-        double estimatedTotal = allCourses.stream()
-                .mapToDouble(theoryCourse -> countWorkload(userId, theoryCourse))
-                .sum();
-
-        // 计算已确认总工作量（只累加审核状态为"已通过"的数据）
-        double confirmedTotal = confirmedCourses.stream()
-                .mapToDouble(theoryCourse -> countWorkload(userId, theoryCourse))
-                .sum();
-
-        // 根据userid将totalWorkload写入数据库表teaching_undergraduate_theory_course中
-        // 先检查是否有对应userid和年份的记录，有则更新，无则插入
-        String username = basicInformationService.getById(userId).getName();
-        QueryWrapper<TeachingTotalWorkload> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId);
-        queryWrapper.eq("year", year);
-        TeachingTotalWorkload teachingTotalWorkload = teachingTotalWorkloadMapper.selectOne(queryWrapper);
-        if (teachingTotalWorkload == null) {
-            teachingTotalWorkload = new TeachingTotalWorkload();
-            teachingTotalWorkload.setUserId(BigDecimal.valueOf(userId));
-            teachingTotalWorkload.setUserName(username);
-            teachingTotalWorkload.setYear(year);
-            teachingTotalWorkload.setTheoryCourseEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            teachingTotalWorkload.setTheoryCourseConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.insert(teachingTotalWorkload);
-        } else {
-//            teachingTotalWorkload.setTheoryCourseWorkload(BigDecimal.valueOf(totalWorkload));
-//            teachingTotalWorkloadMapper.updateById(teachingTotalWorkload);
-            teachingTotalWorkload.setTheoryCourseEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            teachingTotalWorkload.setTheoryCourseConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.update(teachingTotalWorkload,
-                    new QueryWrapper<TeachingTotalWorkload>()
-                            .eq("user_id", userId)
-                            .eq("year", year));
-        }
-//        teachingTotalWorkloadMapper.updateTheoryById(userId, BigDecimal.valueOf(totalWorkload), year);
-        return 0;
-    }
 
 
 }

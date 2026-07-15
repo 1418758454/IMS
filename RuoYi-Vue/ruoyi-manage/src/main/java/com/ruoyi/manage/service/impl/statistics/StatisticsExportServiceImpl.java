@@ -85,7 +85,6 @@ public class StatisticsExportServiceImpl implements StatisticsExportService {
 
     private static final String SCOPE_YEAR_ALL = "YEAR_ALL";
     private static final String PDF_URL_SOURCE_MARK = "/source/";
-    private static final String PDF_UPLOAD_PATH = "/www/wwwroot/pdfupload/source";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -212,7 +211,7 @@ public class StatisticsExportServiceImpl implements StatisticsExportService {
             putZipEntry(zip, buildXlsxName(title, request), workbookBytes);
             for (ModuleDefinition<?> module : modules) {
                 if (module.hasPdfColumn()) {
-                    zip.putNextEntry(new ZipEntry("PDF附件/" + safeFileName(module.sheetName) + "/"));
+                    zip.putNextEntry(new ZipEntry("证明材料附件/" + safeFileName(module.sheetName) + "/"));
                     zip.closeEntry();
                 }
             }
@@ -220,7 +219,7 @@ public class StatisticsExportServiceImpl implements StatisticsExportService {
             for (PdfAttachment attachment : attachments) {
                 File file = resolvePdfFile(attachment.pdfUrl);
                 String entryName = uniqueEntryName(
-                        "PDF附件/" + safeFileName(attachment.moduleName) + "/" +
+                        "证明材料附件/" + safeFileName(attachment.moduleName) + "/" +
                                 safeFileName(attachment.deptName) + "-" +
                                 safeFileName(attachment.userName) + "-" +
                                 safeFileName(attachment.originalFileName),
@@ -238,9 +237,9 @@ public class StatisticsExportServiceImpl implements StatisticsExportService {
                 }
             }
 
-            String report = "PDF下载结果\n成功: " + successCount + "\n缺失: " + missingCount + "\n\n" +
+            String report = "证明材料下载结果\n成功: " + successCount + "\n缺失: " + missingCount + "\n\n" +
                     String.join("\n", reportLines);
-            putZipEntry(zip, "PDF下载结果.txt", report.getBytes(StandardCharsets.UTF_8));
+            putZipEntry(zip, "证明材料下载结果.txt", report.getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -275,13 +274,9 @@ public class StatisticsExportServiceImpl implements StatisticsExportService {
         List<File> candidates = new ArrayList<>();
         if (sourceIndex >= 0) {
             String fileName = decodedUrl.substring(sourceIndex + PDF_URL_SOURCE_MARK.length());
-            candidates.add(new File(PDF_UPLOAD_PATH, fileName));
-            candidates.add(new File(PDF_UPLOAD_PATH + fileName));
-            candidates.add(new File("C:/Users/jimmy/Desktop/pdfupload/test", fileName));
             if (RuoYiConfig.getProfile() != null) {
                 candidates.add(new File(RuoYiConfig.getProfile(), "source/" + fileName));
-                candidates.add(new File(RuoYiConfig.getProfile(), "pdfupload/test/" + fileName));
-                candidates.add(new File(RuoYiConfig.getProfile() + "/profile/source/" + fileName));
+                candidates.add(new File(RuoYiConfig.getProfile(), "source" + fileName));
             }
             return firstExistingFile(candidates);
         }
@@ -296,9 +291,6 @@ public class StatisticsExportServiceImpl implements StatisticsExportService {
             return direct;
         }
         String fileName = extractFileName(decodedUrl);
-        candidates.add(new File(PDF_UPLOAD_PATH, fileName));
-        candidates.add(new File(PDF_UPLOAD_PATH + fileName));
-        candidates.add(new File("C:/Users/jimmy/Desktop/pdfupload/test", fileName));
         if (RuoYiConfig.getProfile() != null) {
             candidates.add(new File(RuoYiConfig.getProfile(), fileName));
             candidates.add(new File(RuoYiConfig.getProfile(), "source/" + fileName));
@@ -469,31 +461,31 @@ public class StatisticsExportServiceImpl implements StatisticsExportService {
                 column("姓名", "userName"), column("项目名称", "projectName"), column("课题类型", "subjectType"),
                 column("当年到位经费", "money"), column("执行开始时间", "executeTimeStart"), column("执行结束时间", "executeTimeEnd"),
                 column("年份", "year"), column("分配比例", "rank"), column("系数", "coefficient"),
-                column("PDF链接", "pdfUrl"), column("工作量", "workload"), column("审核状态", "status"), column("审核意见", "remark"))));
+                column("证明材料链接", "pdfUrl"), column("工作量", "workload"), column("审核状态", "status"), column("审核意见", "remark"))));
         modules.add(new ModuleDefinition<ResearchPaper>("论文", paperService, columns(
                 column("姓名", "userName"), column("论文名称", "title"), column("出版刊物", "journal"),
                 column("出版时间", "publishTime"), column("论文级别", "level"), column("年份", "year"),
-                column("分配比例", "rank"), column("系数", "coefficient"), column("PDF链接", "pdfUrl"),
+                column("分配比例", "rank"), column("系数", "coefficient"), column("证明材料链接", "pdfUrl"),
                 column("工作量", "workload"), column("审核状态", "status"), column("审核意见", "remark"))));
         modules.add(new ModuleDefinition<ResearchMonograph>("论著", monographService, columns(
                 column("姓名", "userName"), column("论著名称", "title"), column("出版社", "publisher"),
                 column("出版时间", "publishTime"), column("论著类型", "monographType"), column("年份", "year"),
-                column("分配比例", "rank"), column("系数", "coefficient"), column("PDF链接", "pdfUrl"),
+                column("分配比例", "rank"), column("系数", "coefficient"), column("证明材料链接", "pdfUrl"),
                 column("工作量", "workload"), column("审核状态", "status"), column("审核意见", "remark"))));
         modules.add(new ModuleDefinition<ResearchAward>("获奖", awardService, columns(
                 column("姓名", "userName"), column("获奖名称", "name"), column("颁奖单位", "organizer"),
                 column("获奖时间", "awardTime"), column("奖励级别", "level"), column("年份", "year"),
-                column("分配比例", "rank"), column("系数", "coefficient"), column("PDF链接", "pdfUrl"),
+                column("分配比例", "rank"), column("系数", "coefficient"), column("证明材料链接", "pdfUrl"),
                 column("工作量", "workload"), column("审核状态", "status"), column("审核意见", "remark"))));
         modules.add(new ModuleDefinition<ResearchPatent>("专利", patentService, columns(
                 column("姓名", "userName"), column("专利名称", "name"), column("专利类型", "type"),
                 column("申请时间", "applyTime"), column("授权时间", "authorizeTime"), column("年份", "year"),
-                column("分配比例", "rank"), column("系数", "coefficient"), column("PDF链接", "pdfUrl"),
+                column("分配比例", "rank"), column("系数", "coefficient"), column("证明材料链接", "pdfUrl"),
                 column("工作量", "workload"), column("审核状态", "status"), column("审核意见", "remark"))));
         modules.add(new ModuleDefinition<ResearchSoftware>("软著", softwareService, columns(
                 column("姓名", "userName"), column("软著名称", "name"), column("申请时间", "applyTime"),
                 column("授权时间", "authorizeTime"), column("年份", "year"), column("分配比例", "rank"),
-                column("系数", "coefficient"), column("PDF链接", "pdfUrl"), column("工作量", "workload"),
+                column("系数", "coefficient"), column("证明材料链接", "pdfUrl"), column("工作量", "workload"),
                 column("审核状态", "status"), column("审核意见", "remark"))));
         return modules;
     }
@@ -512,24 +504,24 @@ public class StatisticsExportServiceImpl implements StatisticsExportService {
                 column("审核状态", "status"), column("审核意见", "remark"))));
         modules.add(new ModuleDefinition<ScienceInnovation>("科技创新", scienceInnovationService, columns(
                 column("姓名", "userName"), column("项目名称", "projectName"), column("结题年份", "endYear"),
-                column("项目级别", "level"), column("年份", "year"), column("PDF链接", "pdfUrl"),
+                column("项目级别", "level"), column("年份", "year"), column("证明材料链接", "pdfUrl"),
                 column("工作量", "workload"), column("审核状态", "status"), column("审核意见", "remark"))));
         modules.add(new ModuleDefinition<Competition>("学科竞赛", competitionService, columns(
                 column("姓名", "userName"), column("获奖项目名称", "awardProjectName"), column("赛事等级", "competitionLevel"),
-                column("获奖级别", "awardLevel"), column("年份", "year"), column("PDF链接", "pdfUrl"),
+                column("获奖级别", "awardLevel"), column("年份", "year"), column("证明材料链接", "pdfUrl"),
                 column("工作量", "workload"), column("审核状态", "status"), column("审核意见", "remark"))));
         modules.add(new ModuleDefinition<Textbook>("出版教材", textbookService, columns(
                 column("姓名", "userName"), column("教材名称", "textbookName"), column("出版社名称", "pressName"),
                 column("出版时间", "publishDate"), column("教材级别", "level"), column("编写身份", "compilerIdentity"),
-                column("年份", "year"), column("PDF链接", "pdfUrl"), column("工作量", "workload"),
+                column("年份", "year"), column("证明材料链接", "pdfUrl"), column("工作量", "workload"),
                 column("审核状态", "status"), column("审核意见", "remark"))));
         modules.add(new ModuleDefinition<EducationReform>("教改项目", educationReformService, columns(
                 column("姓名", "userName"), column("项目名称", "projectName"), column("结题时间", "endDate"),
-                column("项目级别", "level"), column("年份", "year"), column("PDF链接", "pdfUrl"),
+                column("项目级别", "level"), column("年份", "year"), column("证明材料链接", "pdfUrl"),
                 column("工作量", "workload"), column("审核状态", "status"), column("审核意见", "remark"))));
         modules.add(new ModuleDefinition<EducationReformPaper>("教改论文", educationReformPaperService, columns(
                 column("姓名", "userName"), column("论文名称", "paperName"), column("发表日期", "publishDate"),
-                column("论文级别", "level"), column("年份", "year"), column("PDF链接", "pdfUrl"),
+                column("论文级别", "level"), column("年份", "year"), column("证明材料链接", "pdfUrl"),
                 column("工作量", "workload"), column("审核状态", "status"), column("审核意见", "remark"))));
         modules.add(new ModuleDefinition<Proctor>("监考", proctorService, columns(
                 column("姓名", "userName"), column("监考类型", "examType"), column("监考次数", "examCount"),

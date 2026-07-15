@@ -52,7 +52,6 @@ public interface ThesisCourseService extends IService<ThesisCourse> {
      * @param year   授课年份
      * @return 总工作量
      */
-    double countTotalWorkload(Long userId, Integer year);
 
     IPage<ThesisCourse> getThesisCoursePageByUserIds(Integer pageNum, Integer pageSize, List<String> userIds, Integer year, Boolean isAudit);
 

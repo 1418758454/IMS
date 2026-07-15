@@ -19,7 +19,6 @@ public interface EducationReformService extends IService<EducationReform> {
     boolean removeEducationReformByIds(List<Long> ids);
 
     // 计算模块总工作量（保留，累加前端输入的工作量）
-    double countTotalWorkload(Long userId, Integer year);
 
     IPage<EducationReform> getEducationReformPageByUserIds(Integer pageNum, Integer pageSize, List<String> userIds, Integer year, Boolean isAudit);
 

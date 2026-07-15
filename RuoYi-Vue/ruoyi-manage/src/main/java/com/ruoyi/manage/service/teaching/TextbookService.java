@@ -34,7 +34,6 @@ public interface TextbookService extends IService<Textbook> {
     /**
      * 计算并更新总工作量
      */
-    double countTotalWorkload(Long userId, Integer year);
 
     IPage<Textbook> getTextbookPageByUserIds(Integer pageNum, Integer pageSize, List<String> userIds, Integer year, Boolean isAudit);
 

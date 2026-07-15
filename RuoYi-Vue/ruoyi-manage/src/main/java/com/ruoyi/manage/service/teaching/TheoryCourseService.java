@@ -40,7 +40,6 @@ public interface TheoryCourseService extends IService<UndergraduateTheoryCourse>
 
     double countWorkload(Long id, UndergraduateTheoryCourse course);
 
-    double countTotalWorkload(Long userId, Integer year);
 
     IPage<UndergraduateTheoryCourse> getTheoryCoursePageByUserIds(Integer pageNum, Integer pageSize, List<String> userIds, Integer year, Boolean isAudit);
 

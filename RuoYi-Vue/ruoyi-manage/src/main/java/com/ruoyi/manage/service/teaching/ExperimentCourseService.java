@@ -52,7 +52,6 @@ public interface ExperimentCourseService extends IService<ExperimentCourse> {
      * @param year   授课年份
      * @return 总工作量
      */
-    double countTotalWorkload(Long userId, Integer year);
 
     IPage<ExperimentCourse> getExperimentCoursePageByUserIds(Integer pageNum, Integer pageSize, List<String> userIds, Integer year, Boolean isAudit);
 

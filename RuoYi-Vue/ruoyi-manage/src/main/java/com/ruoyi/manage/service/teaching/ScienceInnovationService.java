@@ -51,7 +51,6 @@ public interface ScienceInnovationService extends IService<ScienceInnovation> {
      * @param year   页面选中年份
      * @return 总工作量
      */
-    double countTotalWorkload(Long userId, Integer year);
 
     IPage<ScienceInnovation> getScienceInnovationPageByUserIds(Integer pageNum, Integer pageSize, List<String> userIds, Integer year, Boolean isAudit);
 

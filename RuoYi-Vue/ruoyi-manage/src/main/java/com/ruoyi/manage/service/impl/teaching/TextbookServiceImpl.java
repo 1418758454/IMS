@@ -85,7 +85,6 @@ public class TextbookServiceImpl extends ServiceImpl<TextbookMapper, Textbook> i
 
 //        if(this.updateById(textbook)){
 //            // 更新总工作量
-//            textbookService.countTotalWorkload(textbook.getUserId(), textbook.getYear());
 //            return true;
 //        }
         return this.updateById(textbook);
@@ -155,49 +154,5 @@ public class TextbookServiceImpl extends ServiceImpl<TextbookMapper, Textbook> i
     /**
      * 更新总工作量表（与科技创新逻辑完全一致，仅修改字段名）
      */
-    @Override
-    public double countTotalWorkload(Long userId, Integer year) {
-        // 查询用户当年所有教材记录
-        List<Textbook> allTextbooks = textbookMapper.selectList(
-                new QueryWrapper<Textbook>().eq("user_id", userId).eq("year", year)
-        );
 
-        // 查询用户当年已通过审核的教材记录
-        List<Textbook> confirmedTextbooks = textbookMapper.selectList(
-                new QueryWrapper<Textbook>().eq("user_id", userId).eq("year", year).eq("status", "已通过")
-        );
-
-        // 计算预计总工作量（累加全部数据）
-        double estimatedTotal = allTextbooks.stream()
-                .mapToDouble(textbook -> countWorkload(userId, textbook))
-                .sum();
-
-        // 计算已确认总工作量（只累加审核状态为"已通过"的数据）
-        double confirmedTotal = confirmedTextbooks.stream()
-                .mapToDouble(textbook -> countWorkload(userId, textbook))
-                .sum();
-
-        BasicInformation basicInfo = basicInformationService.getById(userId);
-        String username = basicInfo != null ? basicInfo.getName() : "";
-
-        QueryWrapper<TeachingTotalWorkload> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId).eq("year", year);
-        TeachingTotalWorkload totalRecord = teachingTotalWorkloadMapper.selectOne(queryWrapper);
-
-        if (totalRecord == null) {
-            totalRecord = new TeachingTotalWorkload();
-            totalRecord.setUserId(BigDecimal.valueOf(userId));
-            totalRecord.setUserName(username);
-            totalRecord.setYear(year);
-            totalRecord.setTextbookEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalRecord.setTextbookConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.insert(totalRecord);
-        } else {
-            totalRecord.setTextbookEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalRecord.setTextbookConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.update(totalRecord, queryWrapper);
-        }
-
-        return 0;
-    }
 }

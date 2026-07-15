@@ -5,10 +5,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.research.ResearchPaper;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.research.PaperService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -30,6 +34,9 @@ public class PaperController {
 
     @Autowired
     private BasicInformationService basicInformationService;
+
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
     /**
      * 1. 获取论文列表（分页+条件查询）
@@ -73,6 +80,7 @@ public class PaperController {
      * @return 新增结果（成功/失败）
      */
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addPaper(@RequestBody ResearchPaper paper) {
         String userId = SecurityUtils.getUsername();
         String userName = basicInformationService.getByloginId(userId).getName();
@@ -90,6 +98,9 @@ public class PaperController {
         // 查看论文发表年份与当前页面年份是否一致
         boolean x = !paper.getYear().equals(paper.getPublishTime().toString().substring(0,4));
         boolean success = paperService.addPaper(paper); // 调用Service新增方法
+        if (success) {
+            workloadRefreshService.refreshResearch(paper.getUserId(), paper.getYear());
+        }
 
         if(success && x){
             return AjaxResult.success("新增论文成功,请选择"+paper.getYear()+"年页面查看", paper);
@@ -105,8 +116,15 @@ public class PaperController {
      * @return 删除结果（成功/失败）
      */
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deletePaper(@RequestBody Long[] ids) {
+        List<ResearchPaper> originals = paperService.listByIds(Arrays.asList(ids));
         boolean success = paperService.removePaperByIds(Arrays.asList(ids)); // 调用Service批量删除
+        if (success) {
+            workloadRefreshService.refreshResearch(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
+        }
         return success ? AjaxResult.success("删除论文成功") : AjaxResult.error("删除论文失败");
     }
 
@@ -116,8 +134,10 @@ public class PaperController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updatePaper(@RequestBody ResearchPaper paper,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
+        ResearchPaper originalPaper = paperService.getById(paper.getId());
         String userId = SecurityUtils.getUsername();
         paper.setUserId(Long.valueOf(userId));
         paper.setUpdateTime(LocalDateTime.now());
@@ -129,7 +149,7 @@ public class PaperController {
         paper.setWorkload(workload);
 
         // 2. 保存原始年份（关键：用于后续旧年份总工作量更新）
-        Integer originalYear = Integer.valueOf(paper.getYear()); // 旧年份
+        Integer originalYear = Integer.valueOf(originalPaper.getYear()); // 旧年份
         Integer newYear = Integer.valueOf(paper.getPublishTime().toString().substring(0, 4)); // 从发表时间提取新年份
         boolean yearChanged = !originalYear.equals(newYear); // 判断年份是否变更
 
@@ -142,15 +162,12 @@ public class PaperController {
         // 4. 执行数据库更新
 //        boolean success = paperService.updateById(paper);
         boolean success = false;
-        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(paperService.getById(paper.getId()), paper, auditEdit);
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalPaper, paper, auditEdit);
         if(paperService.updateById(paper)){
-            // 计算模块总工作量
-            paperService.countTotalConfirmedWorkload(paper.getUserId(), paper.getYear());
-            paperService.countTotalEstimatedWorkload(paper.getUserId(), paper.getYear());
-            if (yearChanged) {
-                paperService.countTotalConfirmedWorkload(paper.getUserId(), String.valueOf(originalYear));
-                paperService.countTotalEstimatedWorkload(paper.getUserId(), String.valueOf(originalYear));
-            }
+            workloadRefreshService.refreshResearch(Arrays.asList(
+                    WorkloadScope.of(originalPaper.getUserId(), originalPaper.getYear()),
+                    WorkloadScope.of(paper.getUserId(), paper.getYear())
+            ));
             success = true;
         }
 
@@ -168,18 +185,22 @@ public class PaperController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditPaper(@RequestBody ResearchPaper paper) {
         try {
+            ResearchPaper originalPaper = paperService.getById(paper.getId());
             // 调用Service层审核方法
             boolean success = paperService.auditPaper(paper.getId(), paper.getStatus(), paper.getRemark());
 
             if (success) {
+                workloadRefreshService.refreshResearch(originalPaper.getUserId(), originalPaper.getYear());
                 String message = "已通过".equals(paper.getStatus()) ? "审核通过成功" : "退回修改成功";
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

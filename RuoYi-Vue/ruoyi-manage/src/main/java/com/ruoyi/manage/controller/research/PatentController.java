@@ -5,10 +5,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.research.ResearchPatent;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.research.PatentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -30,6 +34,9 @@ public class PatentController {
 
     @Autowired
     private BasicInformationService basicInformationService;
+
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
     /**
      * 1. 获取专利列表（分页+条件查询）
@@ -73,6 +80,7 @@ public class PatentController {
      * @return 新增结果（成功/失败）
      */
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addPatent(@RequestBody ResearchPatent patent) {
         String userId = SecurityUtils.getUsername();
         String userName = basicInformationService.getByloginId(userId).getName();
@@ -90,6 +98,9 @@ public class PatentController {
         // 查看论文发表年份与当前页面年份是否一致
         boolean x = !patent.getYear().equals(patent.getAuthorizeTime().toString().substring(0,4));
         boolean success = patentService.addPatent(patent); // 调用Service新增方法
+        if (success) {
+            workloadRefreshService.refreshResearch(patent.getUserId(), patent.getYear());
+        }
 
         if(success && x){
             return AjaxResult.success("新增专利成功,请选择"+patent.getYear()+"年页面查看", patent);
@@ -104,8 +115,15 @@ public class PatentController {
      * @return 删除结果（成功/失败）
      */
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deletePatent(@RequestBody Long[] ids) {
+        List<ResearchPatent> originals = patentService.listByIds(Arrays.asList(ids));
         boolean success = patentService.removePatentByIds(Arrays.asList(ids));
+        if (success) {
+            workloadRefreshService.refreshResearch(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
+        }
         return success ? AjaxResult.success("删除专利成功") : AjaxResult.error("删除专利失败");
     }
 
@@ -115,8 +133,10 @@ public class PatentController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updatePatent(@RequestBody ResearchPatent patent,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
+        ResearchPatent originalPatent = patentService.getById(patent.getId());
         String userId = SecurityUtils.getUsername();
         patent.setUserId(Long.valueOf(userId));
         patent.setUpdateTime(LocalDateTime.now());
@@ -128,7 +148,7 @@ public class PatentController {
         patent.setWorkload(workload);
 
         // 2. 保存原始年份（关键：用于后续旧年份总工作量更新）
-        Integer originalYear = Integer.valueOf(patent.getYear()); // 旧年份
+        Integer originalYear = Integer.valueOf(originalPatent.getYear()); // 旧年份
         Integer newYear = Integer.valueOf(patent.getAuthorizeTime().toString().substring(0, 4)); // 从授权时间提取新年份
         boolean yearChanged = !originalYear.equals(newYear); // 判断年份是否变更
 
@@ -141,15 +161,12 @@ public class PatentController {
         // 4. 执行数据库更新
 //        boolean success = patentService.updateById(patent);
         boolean success = false;
-        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(patentService.getById(patent.getId()), patent, auditEdit);
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalPatent, patent, auditEdit);
         if(patentService.updateById(patent)){
-            // 计算模块总工作量
-            patentService.countTotalConfirmedWorkload(patent.getUserId(), patent.getYear());
-            patentService.countTotalEstimatedWorkload(patent.getUserId(), patent.getYear());
-            if (yearChanged) {
-                patentService.countTotalConfirmedWorkload(patent.getUserId(), String.valueOf(originalYear));
-                patentService.countTotalEstimatedWorkload(patent.getUserId(), String.valueOf(originalYear));
-            }
+            workloadRefreshService.refreshResearch(Arrays.asList(
+                    WorkloadScope.of(originalPatent.getUserId(), originalPatent.getYear()),
+                    WorkloadScope.of(patent.getUserId(), patent.getYear())
+            ));
             success = true;
         }
 
@@ -167,18 +184,22 @@ public class PatentController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditPatent(@RequestBody ResearchPatent patent) {
         try {
+            ResearchPatent originalPatent = patentService.getById(patent.getId());
             // 调用Service层审核方法
             boolean success = patentService.auditPatent(patent.getId(), patent.getStatus(), patent.getRemark());
 
             if (success) {
+                workloadRefreshService.refreshResearch(originalPatent.getUserId(), originalPatent.getYear());
                 String message = "已通过".equals(patent.getStatus()) ? "审核通过成功" : "退回修改成功";
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

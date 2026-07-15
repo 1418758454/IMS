@@ -23,7 +23,5 @@ public interface SubjectService extends IService<ResearchSubject> {
 
     boolean auditSubject(Long id, String status, String remark);
 
-    void countTotalConfirmedWorkload(Long userId, String year);
 
-    void countTotalEstimatedWorkload(Long userId, String year);
 }

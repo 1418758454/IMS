@@ -4,13 +4,16 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
-import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.research.ResearchAward;
 import com.ruoyi.manage.domain.teaching.Competition;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.teaching.CompetitionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -26,6 +29,9 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/manage/teaching/competition") // 学科竞赛模块接口根路径
 public class CompetitionController {
+
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
     @Autowired
     private CompetitionService competitionService; // 注入学科竞赛Service
@@ -75,10 +81,8 @@ public class CompetitionController {
      * @return 新增结果
      */
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addCompetition(@RequestBody Competition competition) {
-        if (StringUtils.isEmpty(competition.getPdfUrl())) {
-            return AjaxResult.error("\u8bf7\u4e0a\u4f20PDF\u8bc1\u660e\u6750\u6599");
-        }
         String userId = SecurityUtils.getUsername();
         String userName = basicInformationService.getByloginId(userId).getName();
         competition.setUserId(Long.valueOf(userId));
@@ -93,7 +97,7 @@ public class CompetitionController {
 
         boolean success = competitionService.addCompetition(competition);
         if (success) {
-            competitionService.countTotalWorkload(competition.getUserId(), competition.getYear());
+            workloadRefreshService.refreshTeaching(competition.getUserId(), competition.getYear());
         }
         return success ? AjaxResult.success("新增学科竞赛成功", competition) : AjaxResult.error("新增失败");
     }
@@ -104,11 +108,14 @@ public class CompetitionController {
      * @return 删除结果
      */
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deleteCompetition(@RequestBody Long[] ids, @RequestParam Integer year) {
-        String userId = SecurityUtils.getUsername();
+        List<Competition> originals = competitionService.listByIds(Arrays.asList(ids));
         boolean success = competitionService.removeCompetitionByIds(Arrays.asList(ids));
         if (success) {
-            competitionService.countTotalWorkload(Long.valueOf(userId), year);
+            workloadRefreshService.refreshTeaching(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
         }
         return success ? AjaxResult.success("删除成功") : AjaxResult.error("删除失败");
     }
@@ -119,11 +126,10 @@ public class CompetitionController {
      * @return 更新结果
      */
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updateCompetition(@RequestBody Competition competition,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
-        if (StringUtils.isEmpty(competition.getPdfUrl())) {
-            return AjaxResult.error("\u8bf7\u4e0a\u4f20PDF\u8bc1\u660e\u6750\u6599");
-        }
+        Competition originalCompetition = competitionService.getById(competition.getId());
         String userId = SecurityUtils.getUsername();
         competition.setUserId(Long.valueOf(userId));
 
@@ -132,10 +138,13 @@ public class CompetitionController {
         competition.setUpdateTime(LocalDateTime.now());
         // 将审核状态修改为待审核
         competition.setStatus("待审核");
-        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(competitionService.getById(competition.getId()), competition, auditEdit);
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalCompetition, competition, auditEdit);
         boolean success = competitionService.updateById(competition);
         if (success) {
-            competitionService.countTotalWorkload(competition.getUserId(), competition.getYear());
+            workloadRefreshService.refreshTeaching(Arrays.asList(
+                    WorkloadScope.of(originalCompetition.getUserId(), originalCompetition.getYear()),
+                    WorkloadScope.of(competition.getUserId(), competition.getYear())
+            ));
         }
         return success ? AjaxResult.success("更新成功", competition) : AjaxResult.error("更新失败");
     }
@@ -146,8 +155,10 @@ public class CompetitionController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditCompetition(@RequestBody Competition competition) {
         try {
+            Competition originalCompetition = competitionService.getById(competition.getId());
             // 调用Service层审核方法
             boolean success = competitionService.auditCompetition(competition.getId(), competition.getStatus(), competition.getRemark());
 
@@ -155,13 +166,13 @@ public class CompetitionController {
                 String message = "已通过".equals(competition.getStatus()) ? "审核通过成功" : "退回修改成功";
                 long id  = competition.getId();
                 // 根据id查找数据，得到学科竞赛实体类
-                competition = competitionService.getById(id);
-                competitionService.countTotalWorkload(competition.getUserId(), competition.getYear());
+                workloadRefreshService.refreshTeaching(originalCompetition.getUserId(), originalCompetition.getYear());
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

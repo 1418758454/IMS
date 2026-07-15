@@ -5,11 +5,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.teaching.ThesisCourse;
 
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.teaching.ThesisCourseService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -25,6 +29,9 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/manage/teaching/thesisCourse") // 毕业论文模块接口根路径
 public class ThesisCourseController {
+
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
     @Autowired
     private ThesisCourseService thesisCourseService; // 注入毕业论文Service
@@ -74,6 +81,7 @@ public class ThesisCourseController {
      * @return 新增结果（成功/失败）
      */
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addThesisCourse(@RequestBody ThesisCourse course) {
         String userId = SecurityUtils.getUsername();
         String userName = basicInformationService.getByloginId(userId).getName();
@@ -90,7 +98,7 @@ public class ThesisCourseController {
         boolean success = thesisCourseService.addThesisCourse(course);
         if (success) {
             // 更新当前用户的当前年度的毕业论文模块的总工作量
-            thesisCourseService.countTotalWorkload(course.getUserId(), course.getYear());
+            workloadRefreshService.refreshTeaching(course.getUserId(), course.getYear());
         }
 
         return success ? AjaxResult.success("新增毕业论文记录成功", course) : AjaxResult.error("新增毕业论文记录失败");
@@ -102,13 +110,15 @@ public class ThesisCourseController {
      * @return 删除结果（成功/失败）
      */
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deleteThesisCourse(@RequestBody Long[] ids, @RequestParam(required = false) Integer year) {
-        String userId = SecurityUtils.getUsername();
-
+        List<ThesisCourse> originals = thesisCourseService.listByIds(Arrays.asList(ids));
         boolean success = thesisCourseService.removeThesisCourseByIds(Arrays.asList(ids));
         if (success) {
             // 删除成功，更新当前用户的毕业论文模块的总工作量
-            thesisCourseService.countTotalWorkload(Long.valueOf(userId), year);
+            workloadRefreshService.refreshTeaching(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
         }
         return success ? AjaxResult.success("删除毕业论文记录成功") : AjaxResult.error("删除毕业论文记录失败");
     }
@@ -119,8 +129,10 @@ public class ThesisCourseController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updateThesisCourse(@RequestBody ThesisCourse course,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
+        ThesisCourse originalCourse = thesisCourseService.getById(course.getId());
         String userId = SecurityUtils.getUsername();
         course.setUserId(Long.valueOf(userId)); // 设置当前用户ID
         // 计算工作量（复用实验课计算逻辑框架，调整参数）
@@ -131,11 +143,14 @@ public class ThesisCourseController {
         // 将审核状态修改为待审核
         course.setStatus("待审核");
 
-        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(thesisCourseService.getById(course.getId()), course, auditEdit);
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalCourse, course, auditEdit);
         boolean success = thesisCourseService.updateById(course);
         if (success) {
             // 更新成功，更新当前用户的毕业论文模块的总工作量
-            thesisCourseService.countTotalWorkload(course.getUserId(), course.getYear());
+            workloadRefreshService.refreshTeaching(Arrays.asList(
+                    WorkloadScope.of(originalCourse.getUserId(), originalCourse.getYear()),
+                    WorkloadScope.of(course.getUserId(), course.getYear())
+            ));
         }
         return success ? AjaxResult.success("更新毕业论文记录成功", course) : AjaxResult.error("更新毕业论文记录失败");
     }
@@ -146,21 +161,22 @@ public class ThesisCourseController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditThesisCourse(@RequestBody ThesisCourse course) {
         try {
+            ThesisCourse originalCourse = thesisCourseService.getById(course.getId());
             // 调用Service层审核方法
             boolean success = thesisCourseService.auditThesisCourse(course.getId(), course.getStatus(), course.getRemark());
 
             if (success) {
                 String message = "已通过".equals(course.getStatus()) ? "审核通过成功" : "退回修改成功";
-                long id  = course.getId();
-                course = thesisCourseService.getById(id);
-                thesisCourseService.countTotalWorkload(course.getUserId(), course.getYear());
+                workloadRefreshService.refreshTeaching(originalCourse.getUserId(), originalCourse.getYear());
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

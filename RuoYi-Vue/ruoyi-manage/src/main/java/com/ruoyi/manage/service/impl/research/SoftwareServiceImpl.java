@@ -56,8 +56,6 @@ public class SoftwareServiceImpl extends ServiceImpl<SoftwareMapper, ResearchSof
         software.setYear(software.getAuthorizeTime().toString().substring(0,4));
         if(softwareMapper.insert(software) > 0){
             // 计算模块总工作量
-            countTotalConfirmedWorkload(software.getUserId(), software.getYear());
-            countTotalEstimatedWorkload(software.getUserId(), software.getYear());
             return true;
         }
         return false;
@@ -88,8 +86,6 @@ public class SoftwareServiceImpl extends ServiceImpl<SoftwareMapper, ResearchSof
         // 3. 删除数据库记录
         if(softwareMapper.deleteBatchIds(ids) > 0){
             // 计算模块总工作量
-            countTotalConfirmedWorkload(userId, year);
-            countTotalEstimatedWorkload(userId, year);
             return true;
         }
         return false;
@@ -134,95 +130,12 @@ public class SoftwareServiceImpl extends ServiceImpl<SoftwareMapper, ResearchSof
 
         if(this.updateById(software)){
             // 计算模块总工作量
-            countTotalConfirmedWorkload(software.getUserId(), software.getYear());
-            countTotalEstimatedWorkload(software.getUserId(), software.getYear());
             return true;
         }
         return false;
     }
 
-    @Override
-    public void countTotalConfirmedWorkload(Long userId, String year) {
-        QueryWrapper<ResearchSoftware> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId);
 
-        // 按年份筛选
-        if (StringUtils.isNotBlank(year)) {
-            queryWrapper.eq("year", year);
-        }
 
-        // 只计算状态为"已通过"的记录
-        queryWrapper.eq("status", "已通过");
 
-        // 使用 MyBatis-Plus 的聚合查询计算工作量总和
-        List<ResearchSoftware> confirmedSoftwares = softwareMapper.selectList(queryWrapper);
-
-        // 计算总工作量
-        BigDecimal total = BigDecimal.ZERO;
-        for (ResearchSoftware software : confirmedSoftwares) {
-            if (software.getWorkload() != null) {
-                total = total.add(software.getWorkload());
-            }
-        }
-
-        // 更新总工作量表
-        BasicInformation user = basicInformationService.getById(userId);
-        ResearchTotalWorkload totalWorkload = totalWorkloadMapper.selectOne(
-                new QueryWrapper<ResearchTotalWorkload>().eq("user_id", userId).eq("year", year)
-        );
-
-        if (totalWorkload == null) { //查看总表是否已有记录，没有就创建，有则更新
-            totalWorkload = new ResearchTotalWorkload();
-            totalWorkload.setUserId(BigDecimal.valueOf(userId));
-            totalWorkload.setUserName(user.getName());
-            totalWorkload.setYear(year);
-            totalWorkload.setSoftwareConfirmedWorkload(total);
-            totalWorkloadMapper.insert(totalWorkload);
-        } else {
-            totalWorkload.setSoftwareConfirmedWorkload(total);
-            totalWorkloadMapper.update(totalWorkload, new QueryWrapper<ResearchTotalWorkload>()
-                    .eq("user_id", userId).eq("year", year));
-        }
-    }
-
-    @Override
-    public void countTotalEstimatedWorkload(Long userId, String year) {
-        QueryWrapper<ResearchSoftware> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId);
-
-        // 按年份筛选
-        if (StringUtils.isNotBlank(year)) {
-            queryWrapper.eq("year", year);
-        }
-
-        // 使用 MyBatis-Plus 的聚合查询计算工作量总和
-        List<ResearchSoftware> allSoftwares = softwareMapper.selectList(queryWrapper);
-
-        // 计算总工作量
-        BigDecimal total = BigDecimal.ZERO;
-        for (ResearchSoftware software : allSoftwares) {
-            if (software.getWorkload() != null) {
-                total = total.add(software.getWorkload());
-            }
-        }
-
-        // 更新总工作量表
-        BasicInformation user = basicInformationService.getById(userId);
-        ResearchTotalWorkload totalWorkload = totalWorkloadMapper.selectOne(
-                new QueryWrapper<ResearchTotalWorkload>().eq("user_id", userId).eq("year", year)
-        );
-
-        if (totalWorkload == null) { //查看总表是否已有记录，没有就创建，有则更新
-            totalWorkload = new ResearchTotalWorkload();
-            totalWorkload.setUserId(BigDecimal.valueOf(userId));
-            totalWorkload.setUserName(user.getName());
-            totalWorkload.setYear(year);
-            totalWorkload.setSoftwareEstimatedWorkload(total);
-            totalWorkloadMapper.insert(totalWorkload);
-        } else {
-            totalWorkload.setSoftwareEstimatedWorkload(total);
-            totalWorkloadMapper.update(totalWorkload, new QueryWrapper<ResearchTotalWorkload>()
-                    .eq("user_id", userId).eq("year", year));
-        }
-    }
 }

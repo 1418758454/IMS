@@ -27,7 +27,5 @@ public interface PatentService extends IService<ResearchPatent> {
 
     boolean auditPatent(Long id, String status, String remark);
 
-    void countTotalConfirmedWorkload(Long userId, String year);
 
-    void countTotalEstimatedWorkload(Long userId, String year);
 }

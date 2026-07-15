@@ -6,10 +6,14 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.teaching.ScienceInnovation;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.teaching.ScienceInnovationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -25,6 +29,9 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/manage/teaching/scienceInnovation") // 接口根路径（遵循教学模块命名规范）
 public class ScienceInnovationController {
+
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
     @Autowired
     private ScienceInnovationService scienceInnovationService; // 注入科技创新Service
@@ -74,6 +81,7 @@ public class ScienceInnovationController {
      * @return 新增结果
      */
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addScienceInnovation(@RequestBody ScienceInnovation innovation) {
         if (StringUtils.isEmpty(innovation.getPdfUrl())) {
             return AjaxResult.error("\u8bf7\u4e0a\u4f20PDF\u8bc1\u660e\u6750\u6599");
@@ -95,7 +103,7 @@ public class ScienceInnovationController {
         boolean success = scienceInnovationService.addScienceInnovation(innovation);
         if (success) {
             // 新增成功后，更新当前用户当前年度的科技创新总工作量（与实验课总表逻辑一致）
-            scienceInnovationService.countTotalWorkload(innovation.getUserId(), innovation.getYear());
+            workloadRefreshService.refreshTeaching(innovation.getUserId(), innovation.getYear());
         }
 
         if(success && x){
@@ -113,13 +121,15 @@ public class ScienceInnovationController {
      * @return 删除结果
      */
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deleteScienceInnovation(@RequestBody Long[] ids, @RequestParam(required = false) Integer year) {
-        String userId = SecurityUtils.getUsername();
-
+        List<ScienceInnovation> originals = scienceInnovationService.listByIds(Arrays.asList(ids));
         boolean success = scienceInnovationService.removeScienceInnovationByIds(Arrays.asList(ids));
         if (success) {
             // 删除成功后，更新当前用户当前年度的科技创新总工作量
-            scienceInnovationService.countTotalWorkload(Long.valueOf(userId), year);
+            workloadRefreshService.refreshTeaching(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
         }
         return success ? AjaxResult.success("删除成功") : AjaxResult.error("删除失败");
     }
@@ -130,8 +140,10 @@ public class ScienceInnovationController {
      * @return 更新结果
      */
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updateScienceInnovation(@RequestBody ScienceInnovation innovation,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
+        ScienceInnovation originalInnovation = scienceInnovationService.getById(innovation.getId());
         if (StringUtils.isEmpty(innovation.getPdfUrl())) {
             return AjaxResult.error("\u8bf7\u4e0a\u4f20PDF\u8bc1\u660e\u6750\u6599");
         }
@@ -144,7 +156,7 @@ public class ScienceInnovationController {
         innovation.setWorkload(BigDecimal.valueOf(workload));
 
         // 2. 保存原始年份（关键：用于后续旧年份总工作量更新）
-        Integer originalYear = innovation.getYear(); // 旧年份
+        Integer originalYear = originalInnovation.getYear(); // 旧年份
         Integer newYear = innovation.getEndYear();   // 新年份
         boolean yearChanged = !originalYear.equals(newYear); // 判断年份是否变更
 
@@ -154,19 +166,19 @@ public class ScienceInnovationController {
         innovation.setStatus("待审核");
 
         // 4. 执行数据库更新
-        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(scienceInnovationService.getById(innovation.getId()), innovation, auditEdit);
+        com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalInnovation, innovation, auditEdit);
         boolean success = scienceInnovationService.updateById(innovation);
 
         if (success) {
             // 5. 年份变更时，同步更新旧年份和新年份的总工作量
             if (yearChanged) {
                 // 旧年份：剔除已迁移数据
-                scienceInnovationService.countTotalWorkload(innovation.getUserId(), originalYear);
+                workloadRefreshService.refreshTeaching(originalInnovation.getUserId(), originalInnovation.getYear());
                 // 新年份：新增数据
-                scienceInnovationService.countTotalWorkload(innovation.getUserId(), newYear);
+                workloadRefreshService.refreshTeaching(innovation.getUserId(), newYear);
             } else {
                 // 年份未变更，仅更新当前年份
-                scienceInnovationService.countTotalWorkload(innovation.getUserId(), newYear);
+                workloadRefreshService.refreshTeaching(innovation.getUserId(), newYear);
             }
         }
 
@@ -185,21 +197,22 @@ public class ScienceInnovationController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditScienceInnovation(@RequestBody ScienceInnovation innovation) {
         try {
+            ScienceInnovation originalInnovation = scienceInnovationService.getById(innovation.getId());
             // 调用Service层审核方法
             boolean success = scienceInnovationService.auditScienceInnovation(innovation.getId(), innovation.getStatus(), innovation.getRemark());
 
             if (success) {
                 String message = "已通过".equals(innovation.getStatus()) ? "审核通过成功" : "退回修改成功";
-                long id  = innovation.getId();
-                innovation = scienceInnovationService.getById(id);
-                scienceInnovationService.countTotalWorkload(innovation.getUserId(), innovation.getYear());
+                workloadRefreshService.refreshTeaching(originalInnovation.getUserId(), originalInnovation.getYear());
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.research.ResearchTotalWorkload;
 import com.ruoyi.manage.mapper.BasicInformationMapper;
 import com.ruoyi.manage.mapper.research.ResearchTotalWorkloadMapper;
@@ -62,16 +63,21 @@ public class ResearchTotalWorkloadServiceImpl extends ServiceImpl<ResearchTotalW
     // ResearchTotalWorkloadServiceImpl.java
     @Override
     public ResearchTotalWorkload getTotalWorkload(Integer year, Long userId) {
+        String normalizedYear = WorkloadScope.normalizeYear(year);
         // 根据年份和用户ID查询科研汇总表的数据
         ResearchTotalWorkload totalWorkload = researchTotalWorkloadMapper.selectOne(
-                new QueryWrapper<ResearchTotalWorkload>().eq("year", year).eq("user_id", userId)
+                new QueryWrapper<ResearchTotalWorkload>()
+                        .eq("year", normalizedYear)
+                        .eq("user_id", userId)
+                        .orderByDesc("id")
+                        .last("LIMIT 1")
         );
 
         if (totalWorkload == null) {
             // 将各列数据设置为0
             totalWorkload = new ResearchTotalWorkload();
             totalWorkload.setUserId(BigDecimal.valueOf(userId));
-            totalWorkload.setYear(String.valueOf(year));
+            totalWorkload.setYear(normalizedYear);
             totalWorkload.setSubjectEstimatedWorkload(BigDecimal.ZERO);
             totalWorkload.setSubjectConfirmedWorkload(BigDecimal.ZERO);
             totalWorkload.setPaperEstimatedWorkload(BigDecimal.ZERO);
@@ -86,29 +92,18 @@ public class ResearchTotalWorkloadServiceImpl extends ServiceImpl<ResearchTotalW
             totalWorkload.setSoftwareConfirmedWorkload(BigDecimal.ZERO);
             totalWorkload.setTotalWorkload(BigDecimal.ZERO);
             return totalWorkload;
-        } else {
-            // 累加各项工作得到科研总工作量（使用已确认工作量）
-            BigDecimal total = BigDecimal.ZERO
-                    .add(totalWorkload.getSubjectConfirmedWorkload() != null ? totalWorkload.getSubjectConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getPaperConfirmedWorkload() != null ? totalWorkload.getPaperConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getMonographConfirmedWorkload() != null ? totalWorkload.getMonographConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getAwardConfirmedWorkload() != null ? totalWorkload.getAwardConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getPatentConfirmedWorkload() != null ? totalWorkload.getPatentConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getSoftwareConfirmedWorkload() != null ? totalWorkload.getSoftwareConfirmedWorkload() : BigDecimal.ZERO);
-            totalWorkload.setTotalWorkload(total);
-            // 将总工作量写入数据库
-            researchTotalWorkloadMapper.updateById(totalWorkload);
-            return totalWorkload;
         }
+        return totalWorkload;
     }
 
     @Override
     public ResearchTotalWorkload getTotalWorkload(Integer year, Integer deptId, String userId) {
+        String normalizedYear = WorkloadScope.normalizeYear(year);
         // 当userId为"all"时的处理逻辑
         if ("all".equals(userId)) {
             // 创建一个新的汇总对象用于存储累加结果
             ResearchTotalWorkload totalSummary = new ResearchTotalWorkload();
-            totalSummary.setYear(String.valueOf(year));
+            totalSummary.setYear(normalizedYear);
             totalSummary.setTotalWorkload(BigDecimal.ZERO);
 
             // 初始化所有字段为ZERO
@@ -126,7 +121,7 @@ public class ResearchTotalWorkloadServiceImpl extends ServiceImpl<ResearchTotalW
             totalSummary.setSoftwareConfirmedWorkload(BigDecimal.ZERO);
 
             QueryWrapper<ResearchTotalWorkload> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("year", year);
+            queryWrapper.eq("year", normalizedYear);
 
             // 如果deptId不为0，则按部门筛选
             if (deptId != 0) {
@@ -238,14 +233,18 @@ public class ResearchTotalWorkloadServiceImpl extends ServiceImpl<ResearchTotalW
         } else {
             // 原有的单用户查询逻辑
             ResearchTotalWorkload totalWorkload = researchTotalWorkloadMapper.selectOne(
-                    new QueryWrapper<ResearchTotalWorkload>().eq("year", year).eq("user_id", userId)
+                    new QueryWrapper<ResearchTotalWorkload>()
+                            .eq("year", normalizedYear)
+                            .eq("user_id", userId)
+                            .orderByDesc("id")
+                            .last("LIMIT 1")
             );
 
             if (totalWorkload == null) {
                 // 将各列数据设置为0
                 totalWorkload = new ResearchTotalWorkload();
                 totalWorkload.setUserId(BigDecimal.valueOf(Long.parseLong(userId)));
-                totalWorkload.setYear(String.valueOf(year));
+                totalWorkload.setYear(normalizedYear);
                 totalWorkload.setSubjectEstimatedWorkload(BigDecimal.ZERO);
                 totalWorkload.setSubjectConfirmedWorkload(BigDecimal.ZERO);
                 totalWorkload.setPaperEstimatedWorkload(BigDecimal.ZERO);
@@ -260,20 +259,8 @@ public class ResearchTotalWorkloadServiceImpl extends ServiceImpl<ResearchTotalW
                 totalWorkload.setSoftwareConfirmedWorkload(BigDecimal.ZERO);
                 totalWorkload.setTotalWorkload(BigDecimal.ZERO);
                 return totalWorkload;
-            } else {
-                // 累加各项工作得到科研总工作量（使用预计工作量）
-                BigDecimal total = BigDecimal.ZERO
-                        .add(totalWorkload.getSubjectConfirmedWorkload() != null ? totalWorkload.getSubjectConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getPaperConfirmedWorkload() != null ? totalWorkload.getPaperConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getMonographConfirmedWorkload() != null ? totalWorkload.getMonographConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getAwardConfirmedWorkload() != null ? totalWorkload.getAwardConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getPatentConfirmedWorkload() != null ? totalWorkload.getPatentConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getSoftwareConfirmedWorkload() != null ? totalWorkload.getSoftwareConfirmedWorkload() : BigDecimal.ZERO);
-                totalWorkload.setTotalWorkload(total);
-                // 将总工作量写入数据库
-                researchTotalWorkloadMapper.updateById(totalWorkload);
-                return totalWorkload;
             }
+            return totalWorkload;
         }
     }
 

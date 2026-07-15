@@ -33,7 +33,6 @@ public interface CompetitionService extends IService<Competition> {
     /**
      * 计算总工作量并更新到总表
      */
-    double countTotalWorkload(Long userId, Integer year);
 
     IPage<Competition> getCompetitionPageByUserIds(Integer pageNum, Integer pageSize, List<String> userIds, Integer year, Boolean isAudit);
 

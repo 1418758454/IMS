@@ -5,10 +5,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.manage.domain.BasicInformation;
+import com.ruoyi.manage.domain.WorkloadScope;
 import com.ruoyi.manage.domain.research.ResearchSoftware;
 import com.ruoyi.manage.service.BasicInformationService;
+import com.ruoyi.manage.service.WorkloadRefreshService;
 import com.ruoyi.manage.service.research.SoftwareService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -32,6 +36,9 @@ public class SoftwareController {
 
     @Autowired
     private BasicInformationService basicInformationService;
+
+    @Autowired
+    private WorkloadRefreshService workloadRefreshService;
 
     /**
      * 1. 获取软著列表（分页+条件查询）
@@ -75,6 +82,7 @@ public class SoftwareController {
      * @return 新增结果（成功/失败）
      */
     @PostMapping("/add")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult addSoftware(@RequestBody ResearchSoftware software) {
         String userId = SecurityUtils.getUsername();
         String userName = basicInformationService.getByloginId(userId).getName();
@@ -93,6 +101,9 @@ public class SoftwareController {
         // 查看论文发表年份与当前页面年份是否一致
         boolean x = !software.getYear().equals(software.getAuthorizeTime().toString().substring(0,4));
         boolean success = softwareService.addSoftware(software); // 调用Service新增方法
+        if (success) {
+            workloadRefreshService.refreshResearch(software.getUserId(), software.getYear());
+        }
 
         if(success && x){
             return AjaxResult.success("新增软著成功,请选择"+software.getYear()+"年页面查看", software);
@@ -108,8 +119,15 @@ public class SoftwareController {
      * @return 删除结果（成功/失败）
      */
     @DeleteMapping("/delete")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult deleteSoftware(@RequestBody Long[] ids) {
+        List<ResearchSoftware> originals = softwareService.listByIds(Arrays.asList(ids));
         boolean success = softwareService.removeSoftwareByIds(Arrays.asList(ids));
+        if (success) {
+            workloadRefreshService.refreshResearch(originals.stream()
+                    .map(item -> WorkloadScope.of(item.getUserId(), item.getYear()))
+                    .collect(Collectors.toList()));
+        }
         return success ? AjaxResult.success("删除软著成功") : AjaxResult.error("删除软著失败");
     }
 
@@ -119,6 +137,7 @@ public class SoftwareController {
      * @return 更新结果（成功/失败）
      */
     @PutMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult updateSoftware(@RequestBody ResearchSoftware software,
             @RequestParam(defaultValue = "false") boolean auditEdit) {
         String userId = SecurityUtils.getUsername();
@@ -137,7 +156,7 @@ public class SoftwareController {
         software.setWorkload(workload);
 
         // 2. 保存原始年份（关键：用于后续旧年份总工作量更新）
-        Integer originalYear = Integer.valueOf(software.getYear()); // 旧年份
+        Integer originalYear = Integer.valueOf(originalSoftware.getYear()); // 旧年份
         Integer newYear = Integer.valueOf(software.getAuthorizeTime().toString().substring(0, 4)); // 从授权时间提取新年份
         boolean yearChanged = !originalYear.equals(newYear); // 判断年份是否变更
 
@@ -152,13 +171,10 @@ public class SoftwareController {
         boolean success = false;
         com.ruoyi.manage.utils.AdminAuditUpdateUtils.preserve(originalSoftware, software, auditEdit);
         if(softwareService.updateById(software)){
-            // 计算模块总工作量
-            softwareService.countTotalConfirmedWorkload(software.getUserId(), software.getYear());
-            softwareService.countTotalEstimatedWorkload(software.getUserId(), software.getYear());
-            if (yearChanged) {
-                softwareService.countTotalConfirmedWorkload(software.getUserId(), String.valueOf(originalYear));
-                softwareService.countTotalEstimatedWorkload(software.getUserId(), String.valueOf(originalYear));
-            }
+            workloadRefreshService.refreshResearch(Arrays.asList(
+                    WorkloadScope.of(originalSoftware.getUserId(), originalSoftware.getYear()),
+                    WorkloadScope.of(software.getUserId(), software.getYear())
+            ));
             success = true;
         }
 
@@ -176,18 +192,22 @@ public class SoftwareController {
      * @return 审核结果（成功/失败）
      */
     @PutMapping("/audit")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult auditSoftware(@RequestBody ResearchSoftware software) {
         try {
+            ResearchSoftware originalSoftware = softwareService.getById(software.getId());
             // 调用Service层审核方法
             boolean success = softwareService.auditSoftware(software.getId(), software.getStatus(), software.getRemark());
 
             if (success) {
+                workloadRefreshService.refreshResearch(originalSoftware.getUserId(), originalSoftware.getYear());
                 String message = "已通过".equals(software.getStatus()) ? "审核通过成功" : "退回修改成功";
                 return AjaxResult.success(message);
             } else {
                 return AjaxResult.error("审核操作失败");
             }
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return AjaxResult.error("审核过程中发生错误: " + e.getMessage());
         }
     }

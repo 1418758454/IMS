@@ -74,7 +74,6 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
 
 //        if(this.updateById(competition)){
 //            // 更新总工作量
-//            competitionService.countTotalWorkload(competition.getUserId(), competition.getYear());
 //            return true;
 //        }
         return this.updateById(competition);
@@ -143,54 +142,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         return Math.round(baseCoeff * 1000) / 1000.0; // 保留三位小数
     }
 
-    @Override
-    public double countTotalWorkload(Long userId, Integer year) {
-        // 查询用户当年所有竞赛记录
-        List<Competition> allCompetitions = competitionMapper.selectList(
-                new QueryWrapper<Competition>().eq("user_id", userId).eq("year", year)
-        );
 
-        // 查询用户当年已通过审核的竞赛记录
-        List<Competition> confirmedCompetitions = competitionMapper.selectList(
-                new QueryWrapper<Competition>().eq("user_id", userId).eq("year", year).eq("status", "已通过")
-        );
-
-        // 计算预计总工作量（累加全部数据）
-        double estimatedTotal = allCompetitions.stream()
-                .mapToDouble(c -> countWorkload(userId, c))
-                .sum();
-
-        // 计算已确认总工作量（只累加审核状态为"已通过"的数据）
-        double confirmedTotal = confirmedCompetitions.stream()
-                .mapToDouble(c -> countWorkload(userId, c))
-                .sum();
-
-        // 学科竞赛模块工作量200封顶
-        estimatedTotal = Math.min(estimatedTotal, 200.0);
-        confirmedTotal = Math.min(confirmedTotal, 200.0);
-
-        // 更新总工作量表
-        BasicInformation user = basicInformationService.getById(userId);
-        TeachingTotalWorkload totalWorkload = totalWorkloadMapper.selectOne(
-                new QueryWrapper<TeachingTotalWorkload>().eq("user_id", userId).eq("year", year)
-        );
-
-        if (totalWorkload == null) {
-            totalWorkload = new TeachingTotalWorkload();
-            totalWorkload.setUserId(BigDecimal.valueOf(userId));
-            totalWorkload.setUserName(user.getName());
-            totalWorkload.setYear(year);
-            totalWorkload.setCompetitionEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalWorkload.setCompetitionConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            totalWorkloadMapper.insert(totalWorkload);
-        } else {
-            totalWorkload.setCompetitionEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalWorkload.setCompetitionConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            totalWorkloadMapper.update(totalWorkload, new QueryWrapper<TeachingTotalWorkload>()
-                    .eq("user_id", userId).eq("year", year));
-        }
-        return 0;
-    }
 
 
 }

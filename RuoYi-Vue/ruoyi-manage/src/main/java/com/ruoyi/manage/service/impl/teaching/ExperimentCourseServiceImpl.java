@@ -76,7 +76,6 @@ public class ExperimentCourseServiceImpl extends ServiceImpl<ExperimentCourseMap
 
 //        if(this.updateById(course)){
 //            // 更新总工作量
-//            experimentCourseService.countTotalWorkload(course.getUserId(), course.getYear());
 //            return true;
 //        }
         return this.updateById(course);
@@ -124,49 +123,6 @@ public class ExperimentCourseServiceImpl extends ServiceImpl<ExperimentCourseMap
     /**
      * 计算并更新用户的实验课总工作量（写入总工作量表的practical_course_workload字段）
      */
-    @Override
-    public double countTotalWorkload(Long userId, Integer year) {
-        // 查询用户当年所有实验课记录
-        List<ExperimentCourse> allCourses = experimentCourseMapper.selectList(
-                new QueryWrapper<ExperimentCourse>().eq("user_id", userId).eq("year", year)
-        );
 
-        // 查询用户当年已通过审核的实验课记录
-        List<ExperimentCourse> confirmedCourses = experimentCourseMapper.selectList(
-                new QueryWrapper<ExperimentCourse>().eq("user_id", userId).eq("year", year).eq("status", "已通过")
-        );
-
-        // 计算预计总工作量（累加全部数据）
-        double estimatedTotal = allCourses.stream()
-                .mapToDouble(course -> countWorkload(userId, course))
-                .sum();
-
-        // 计算已确认总工作量（只累加审核状态为"已通过"的数据）
-        double confirmedTotal = confirmedCourses.stream()
-                .mapToDouble(course -> countWorkload(userId, course))
-                .sum();
-
-        // 更新总工作量表
-        String username = basicInformationService.getById(userId).getName();
-        QueryWrapper<TeachingTotalWorkload> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId).eq("year", year);
-        TeachingTotalWorkload teachingTotalWorkload = teachingTotalWorkloadMapper.selectOne(queryWrapper);
-
-        if (teachingTotalWorkload == null) {
-            teachingTotalWorkload = new TeachingTotalWorkload();
-            teachingTotalWorkload.setUserId(BigDecimal.valueOf(userId));
-            teachingTotalWorkload.setUserName(username);
-            teachingTotalWorkload.setYear(year);
-            teachingTotalWorkload.setExperimentCourseEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            teachingTotalWorkload.setExperimentCourseConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.insert(teachingTotalWorkload);
-        } else {
-            teachingTotalWorkload.setExperimentCourseEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            teachingTotalWorkload.setExperimentCourseConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.update(teachingTotalWorkload, queryWrapper);
-        }
-
-        return 0;
-    }
 
 }

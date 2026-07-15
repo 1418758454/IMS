@@ -77,7 +77,6 @@ public class ThesisCourseServiceImpl extends ServiceImpl<ThesisCourseMapper, The
 
 //        if(this.updateById(course)){
 //            // 更新总工作量
-//            thesisCourseService.countTotalWorkload(course.getUserId(), course.getYear());
 //            return true;
 //        }
         return this.updateById(course);
@@ -128,49 +127,6 @@ public class ThesisCourseServiceImpl extends ServiceImpl<ThesisCourseMapper, The
     /**
      * 计算并更新用户的毕业论文总工作量（写入总工作量表的thesis_course_workload字段）
      */
-    @Override
-    public double countTotalWorkload(Long userId, Integer year) {
-        // 查询用户当年所有毕业论文记录
-        List<ThesisCourse> allCourses = thesisCourseMapper.selectList(
-                new QueryWrapper<ThesisCourse>().eq("user_id", userId).eq("year", year)
-        );
 
-        // 查询用户当年已通过审核的毕业论文记录
-        List<ThesisCourse> confirmedCourses = thesisCourseMapper.selectList(
-                new QueryWrapper<ThesisCourse>().eq("user_id", userId).eq("year", year).eq("status", "已通过")
-        );
-
-        // 计算预计总工作量（累加全部数据）
-        double estimatedTotal = allCourses.stream()
-                .mapToDouble(course -> countWorkload(userId, course))
-                .sum();
-
-        // 计算已确认总工作量（只累加审核状态为"已通过"的数据）
-        double confirmedTotal = confirmedCourses.stream()
-                .mapToDouble(course -> countWorkload(userId, course))
-                .sum();
-
-        // 更新总工作量表
-        String username = basicInformationService.getById(userId).getName();
-        QueryWrapper<TeachingTotalWorkload> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId).eq("year", year);
-        TeachingTotalWorkload teachingTotalWorkload = teachingTotalWorkloadMapper.selectOne(queryWrapper);
-
-        if (teachingTotalWorkload == null) {
-            teachingTotalWorkload = new TeachingTotalWorkload();
-            teachingTotalWorkload.setUserId(BigDecimal.valueOf(userId));
-            teachingTotalWorkload.setUserName(username);
-            teachingTotalWorkload.setYear(year);
-            teachingTotalWorkload.setThesisCourseEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            teachingTotalWorkload.setThesisCourseConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.insert(teachingTotalWorkload);
-        } else {
-            teachingTotalWorkload.setThesisCourseEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            teachingTotalWorkload.setThesisCourseConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.update(teachingTotalWorkload, queryWrapper);
-        }
-
-        return 0;
-    }
 
 }

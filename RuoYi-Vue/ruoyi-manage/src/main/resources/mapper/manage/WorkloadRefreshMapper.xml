@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.manage.mapper.WorkloadRefreshMapper">
+
+    <select id="aggregateResearch" resultType="com.ruoyi.manage.domain.research.ResearchTotalWorkload">
+        SELECT totals.*,
+               totals.subject_confirmed_workload
+               + totals.paper_confirmed_workload
+               + totals.monograph_confirmed_workload
+               + totals.award_confirmed_workload
+               + totals.patent_confirmed_workload
+               + totals.software_confirmed_workload AS total_workload
+        FROM (
+            SELECT #{userId} AS user_id,
+                   COALESCE(MAX(detail.user_name), '') AS user_name,
+                   #{year} AS `year`,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'subject' THEN detail.workload ELSE 0 END), 0) AS subject_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'subject' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS subject_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'paper' THEN detail.workload ELSE 0 END), 0) AS paper_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'paper' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS paper_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'monograph' THEN detail.workload ELSE 0 END), 0) AS monograph_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'monograph' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS monograph_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'award' THEN detail.workload ELSE 0 END), 0) AS award_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'award' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS award_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'patent' THEN detail.workload ELSE 0 END), 0) AS patent_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'patent' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS patent_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'software' THEN detail.workload ELSE 0 END), 0) AS software_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'software' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS software_confirmed_workload
+            FROM (
+                SELECT user_name, COALESCE(workload, 0) AS workload, status, 'subject' AS module_name
+                FROM research_subject
+                WHERE user_id = #{userId}
+                  AND (`year` = #{year} OR `year` LIKE CONCAT(#{year}, '-%') OR `year` LIKE CONCAT(#{year}, '/%'))
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'paper'
+                FROM research_paper
+                WHERE user_id = #{userId}
+                  AND (`year` = #{year} OR `year` LIKE CONCAT(#{year}, '-%') OR `year` LIKE CONCAT(#{year}, '/%'))
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'monograph'
+                FROM research_monograph
+                WHERE user_id = #{userId}
+                  AND (`year` = #{year} OR `year` LIKE CONCAT(#{year}, '-%') OR `year` LIKE CONCAT(#{year}, '/%'))
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'award'
+                FROM research_award
+                WHERE user_id = #{userId}
+                  AND (`year` = #{year} OR `year` LIKE CONCAT(#{year}, '-%') OR `year` LIKE CONCAT(#{year}, '/%'))
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'patent'
+                FROM research_patent
+                WHERE user_id = #{userId}
+                  AND (`year` = #{year} OR `year` LIKE CONCAT(#{year}, '-%') OR `year` LIKE CONCAT(#{year}, '/%'))
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'software'
+                FROM research_software
+                WHERE user_id = #{userId}
+                  AND (`year` = #{year} OR `year` LIKE CONCAT(#{year}, '-%') OR `year` LIKE CONCAT(#{year}, '/%'))
+            ) detail
+            HAVING COUNT(*) &gt; 0
+        ) totals
+    </select>
+
+    <select id="aggregateTeaching" resultType="com.ruoyi.manage.domain.teaching.TeachingTotalWorkload">
+        SELECT totals.*,
+               totals.theory_course_confirmed_workload
+               + totals.experiment_course_confirmed_workload
+               + totals.practical_teaching_confirmed_workload
+               + totals.thesis_course_confirmed_workload
+               + totals.science_innovation_confirmed_workload
+               + totals.competition_confirmed_workload
+               + totals.textbook_confirmed_workload
+               + totals.education_reform_confirmed_workload
+               + totals.education_reform_paper_confirmed_workload
+               + totals.proctor_confirmed_workload
+               + totals.graduate_theory_course_confirmed_workload
+               + totals.graduate_guide_student_confirmed_workload AS total_workload
+        FROM (
+            SELECT #{userId} AS user_id,
+                   COALESCE(MAX(detail.user_name), '') AS user_name,
+                   #{year} AS `year`,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'theory_course' THEN detail.workload ELSE 0 END), 0) AS theory_course_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'theory_course' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS theory_course_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'experiment_course' THEN detail.workload ELSE 0 END), 0) AS experiment_course_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'experiment_course' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS experiment_course_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'practical_teaching' THEN detail.workload ELSE 0 END), 0) AS practical_teaching_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'practical_teaching' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS practical_teaching_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'thesis_course' THEN detail.workload ELSE 0 END), 0) AS thesis_course_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'thesis_course' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS thesis_course_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'science_innovation' THEN detail.workload ELSE 0 END), 0) AS science_innovation_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'science_innovation' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS science_innovation_confirmed_workload,
+                   LEAST(200, COALESCE(SUM(CASE WHEN detail.module_name = 'competition' THEN detail.workload ELSE 0 END), 0)) AS competition_estimated_workload,
+                   LEAST(200, COALESCE(SUM(CASE WHEN detail.module_name = 'competition' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0)) AS competition_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'textbook' THEN detail.workload ELSE 0 END), 0) AS textbook_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'textbook' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS textbook_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'education_reform' THEN detail.workload ELSE 0 END), 0) AS education_reform_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'education_reform' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS education_reform_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'education_reform_paper' THEN detail.workload ELSE 0 END), 0) AS education_reform_paper_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'education_reform_paper' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS education_reform_paper_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'proctor' THEN detail.workload ELSE 0 END), 0) AS proctor_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'proctor' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS proctor_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'graduate_theory_course' THEN detail.workload ELSE 0 END), 0) AS graduate_theory_course_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'graduate_theory_course' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS graduate_theory_course_confirmed_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'graduate_guide_student' THEN detail.workload ELSE 0 END), 0) AS graduate_guide_student_estimated_workload,
+                   COALESCE(SUM(CASE WHEN detail.module_name = 'graduate_guide_student' AND detail.status = '已通过' THEN detail.workload ELSE 0 END), 0) AS graduate_guide_student_confirmed_workload
+            FROM (
+                SELECT user_name, COALESCE(workload, 0) AS workload, status, 'theory_course' AS module_name
+                FROM teaching_undergraduate_theory_course WHERE user_id = #{userId} AND `year` = #{year}
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'experiment_course'
+                FROM teaching_undergraduate_experiment_course WHERE user_id = #{userId} AND `year` = #{year}
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'practical_teaching'
+                FROM teaching_undergraduate_practice_course WHERE user_id = #{userId} AND `year` = #{year}
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'thesis_course'
+                FROM undergraduate_thesis_course WHERE user_id = #{userId} AND `year` = #{year}
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'science_innovation'
+                FROM teaching_science_innovation WHERE user_id = #{userId} AND `year` = #{year}
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'competition'
+                FROM teaching_competition WHERE user_id = #{userId} AND `year` = #{year}
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'textbook'
+                FROM teaching_textbook WHERE user_id = #{userId} AND `year` = #{year}
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'education_reform'
+                FROM teaching_education_reform WHERE user_id = #{userId} AND `year` = #{year}
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'education_reform_paper'
+                FROM teaching_education_reform_paper WHERE user_id = #{userId} AND `year` = #{year}
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'proctor'
+                FROM teaching_proctor WHERE user_id = #{userId} AND `year` = #{year}
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'graduate_theory_course'
+                FROM teaching_graduate_theory_course WHERE user_id = #{userId} AND `year` = #{year}
+                UNION ALL
+                SELECT user_name, COALESCE(workload, 0), status, 'graduate_guide_student'
+                FROM teaching_graduate_guide_student WHERE user_id = #{userId} AND `year` = #{year}
+            ) detail
+            HAVING COUNT(*) &gt; 0
+        ) totals
+    </select>
+
+    <insert id="upsertResearch">
+        INSERT INTO research_total_workload (
+            user_id, user_name, `year`,
+            subject_estimated_workload, subject_confirmed_workload,
+            paper_estimated_workload, paper_confirmed_workload,
+            monograph_estimated_workload, monograph_confirmed_workload,
+            award_estimated_workload, award_confirmed_workload,
+            patent_estimated_workload, patent_confirmed_workload,
+            software_estimated_workload, software_confirmed_workload,
+            total_workload
+        ) VALUES (
+            #{userId}, #{userName}, #{year},
+            #{subjectEstimatedWorkload}, #{subjectConfirmedWorkload},
+            #{paperEstimatedWorkload}, #{paperConfirmedWorkload},
+            #{monographEstimatedWorkload}, #{monographConfirmedWorkload},
+            #{awardEstimatedWorkload}, #{awardConfirmedWorkload},
+            #{patentEstimatedWorkload}, #{patentConfirmedWorkload},
+            #{softwareEstimatedWorkload}, #{softwareConfirmedWorkload},
+            #{totalWorkload}
+        )
+        ON DUPLICATE KEY UPDATE
+            user_name = VALUES(user_name),
+            subject_estimated_workload = VALUES(subject_estimated_workload),
+            subject_confirmed_workload = VALUES(subject_confirmed_workload),
+            paper_estimated_workload = VALUES(paper_estimated_workload),
+            paper_confirmed_workload = VALUES(paper_confirmed_workload),
+            monograph_estimated_workload = VALUES(monograph_estimated_workload),
+            monograph_confirmed_workload = VALUES(monograph_confirmed_workload),
+            award_estimated_workload = VALUES(award_estimated_workload),
+            award_confirmed_workload = VALUES(award_confirmed_workload),
+            patent_estimated_workload = VALUES(patent_estimated_workload),
+            patent_confirmed_workload = VALUES(patent_confirmed_workload),
+            software_estimated_workload = VALUES(software_estimated_workload),
+            software_confirmed_workload = VALUES(software_confirmed_workload),
+            total_workload = VALUES(total_workload)
+    </insert>
+
+    <insert id="upsertTeaching">
+        INSERT INTO teaching_total_workload (
+            user_id, user_name, `year`,
+            theory_course_estimated_workload, theory_course_confirmed_workload,
+            experiment_course_estimated_workload, experiment_course_confirmed_workload,
+            practical_teaching_estimated_workload, practical_teaching_confirmed_workload,
+            thesis_course_estimated_workload, thesis_course_confirmed_workload,
+            science_innovation_estimated_workload, science_innovation_confirmed_workload,
+            competition_estimated_workload, competition_confirmed_workload,
+            textbook_estimated_workload, textbook_confirmed_workload,
+            education_reform_estimated_workload, education_reform_confirmed_workload,
+            education_reform_paper_estimated_workload, education_reform_paper_confirmed_workload,
+            proctor_estimated_workload, proctor_confirmed_workload,
+            graduate_theory_course_estimated_workload, graduate_theory_course_confirmed_workload,
+            graduate_guide_student_estimated_workload, graduate_guide_student_confirmed_workload,
+            total_workload
+        ) VALUES (
+            #{userId}, #{userName}, #{year},
+            #{theoryCourseEstimatedWorkload}, #{theoryCourseConfirmedWorkload},
+            #{experimentCourseEstimatedWorkload}, #{experimentCourseConfirmedWorkload},
+            #{practicalTeachingEstimatedWorkload}, #{practicalTeachingConfirmedWorkload},
+            #{thesisCourseEstimatedWorkload}, #{thesisCourseConfirmedWorkload},
+            #{scienceInnovationEstimatedWorkload}, #{scienceInnovationConfirmedWorkload},
+            #{competitionEstimatedWorkload}, #{competitionConfirmedWorkload},
+            #{textbookEstimatedWorkload}, #{textbookConfirmedWorkload},
+            #{educationReformEstimatedWorkload}, #{educationReformConfirmedWorkload},
+            #{educationReformPaperEstimatedWorkload}, #{educationReformPaperConfirmedWorkload},
+            #{proctorEstimatedWorkload}, #{proctorConfirmedWorkload},
+            #{graduateTheoryCourseEstimatedWorkload}, #{graduateTheoryCourseConfirmedWorkload},
+            #{graduateGuideStudentEstimatedWorkload}, #{graduateGuideStudentConfirmedWorkload},
+            #{totalWorkload}
+        )
+        ON DUPLICATE KEY UPDATE
+            user_name = VALUES(user_name),
+            theory_course_estimated_workload = VALUES(theory_course_estimated_workload),
+            theory_course_confirmed_workload = VALUES(theory_course_confirmed_workload),
+            experiment_course_estimated_workload = VALUES(experiment_course_estimated_workload),
+            experiment_course_confirmed_workload = VALUES(experiment_course_confirmed_workload),
+            practical_teaching_estimated_workload = VALUES(practical_teaching_estimated_workload),
+            practical_teaching_confirmed_workload = VALUES(practical_teaching_confirmed_workload),
+            thesis_course_estimated_workload = VALUES(thesis_course_estimated_workload),
+            thesis_course_confirmed_workload = VALUES(thesis_course_confirmed_workload),
+            science_innovation_estimated_workload = VALUES(science_innovation_estimated_workload),
+            science_innovation_confirmed_workload = VALUES(science_innovation_confirmed_workload),
+            competition_estimated_workload = VALUES(competition_estimated_workload),
+            competition_confirmed_workload = VALUES(competition_confirmed_workload),
+            textbook_estimated_workload = VALUES(textbook_estimated_workload),
+            textbook_confirmed_workload = VALUES(textbook_confirmed_workload),
+            education_reform_estimated_workload = VALUES(education_reform_estimated_workload),
+            education_reform_confirmed_workload = VALUES(education_reform_confirmed_workload),
+            education_reform_paper_estimated_workload = VALUES(education_reform_paper_estimated_workload),
+            education_reform_paper_confirmed_workload = VALUES(education_reform_paper_confirmed_workload),
+            proctor_estimated_workload = VALUES(proctor_estimated_workload),
+            proctor_confirmed_workload = VALUES(proctor_confirmed_workload),
+            graduate_theory_course_estimated_workload = VALUES(graduate_theory_course_estimated_workload),
+            graduate_theory_course_confirmed_workload = VALUES(graduate_theory_course_confirmed_workload),
+            graduate_guide_student_estimated_workload = VALUES(graduate_guide_student_estimated_workload),
+            graduate_guide_student_confirmed_workload = VALUES(graduate_guide_student_confirmed_workload),
+            total_workload = VALUES(total_workload)
+    </insert>
+
+    <delete id="deleteResearch">
+        DELETE FROM research_total_workload WHERE user_id = #{userId} AND `year` = #{year}
+    </delete>
+
+    <delete id="deleteTeaching">
+        DELETE FROM teaching_total_workload WHERE user_id = #{userId} AND `year` = #{year}
+    </delete>
+</mapper>

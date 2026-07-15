@@ -86,7 +86,6 @@ public class ScienceInnovationServiceImpl extends ServiceImpl<ScienceInnovationM
 
 //        if(this.updateById(innovation)){
 //            // 更新总工作量
-//            scienceInnovationService.countTotalWorkload(innovation.getUserId(), innovation.getYear());
 //            return true;
 //        }
         return this.updateById(innovation);
@@ -143,52 +142,5 @@ public class ScienceInnovationServiceImpl extends ServiceImpl<ScienceInnovationM
     /**
      * 计算总工作量并更新到TeachingTotalWorkload表（与实验课逻辑完全一致，仅修改字段名）
      */
-    @Override
-    public double countTotalWorkload(Long userId, Integer year) {
-        // 查询用户当年所有科技创新记录
-        List<ScienceInnovation> allInnovations = scienceInnovationMapper.selectList(
-                new QueryWrapper<ScienceInnovation>().eq("user_id", userId).eq("year", year)
-        );
 
-        // 查询用户当年已通过审核的科技创新记录
-        List<ScienceInnovation> confirmedInnovations = scienceInnovationMapper.selectList(
-                new QueryWrapper<ScienceInnovation>().eq("user_id", userId).eq("year", year).eq("status", "已通过")
-        );
-
-        // 计算预计总工作量（累加全部数据）
-        double estimatedTotal = allInnovations.stream()
-                .mapToDouble(innovation -> countWorkload(userId, innovation))
-                .sum();
-
-        // 计算已确认总工作量（只累加审核状态为"已通过"的数据）
-        double confirmedTotal = confirmedInnovations.stream()
-                .mapToDouble(innovation -> countWorkload(userId, innovation))
-                .sum();
-
-        // 3. 更新总工作量表（TeachingTotalWorkload）的科技创新字段（假设字段名为science_innovation_workload）
-        BasicInformation basicInfo = basicInformationService.getById(userId);
-        String username = basicInfo != null ? basicInfo.getName() : ""; // 获取用户姓名
-
-        QueryWrapper<TeachingTotalWorkload> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId).eq("year", year);
-        TeachingTotalWorkload totalWorkloadRecord = teachingTotalWorkloadMapper.selectOne(queryWrapper);
-
-        if (totalWorkloadRecord == null) {
-            // 新增总工作量记录
-            totalWorkloadRecord = new TeachingTotalWorkload();
-            totalWorkloadRecord.setUserId(BigDecimal.valueOf(userId));
-            totalWorkloadRecord.setUserName(username);
-            totalWorkloadRecord.setYear(year);
-            totalWorkloadRecord.setScienceInnovationEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalWorkloadRecord.setScienceInnovationConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.insert(totalWorkloadRecord);
-        } else {
-            // 更新已有记录
-            totalWorkloadRecord.setScienceInnovationEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalWorkloadRecord.setScienceInnovationConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.update(totalWorkloadRecord, queryWrapper);
-        }
-
-        return 0;
-    }
 }

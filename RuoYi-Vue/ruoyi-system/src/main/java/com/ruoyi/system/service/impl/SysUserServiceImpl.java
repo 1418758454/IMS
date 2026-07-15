@@ -5,9 +5,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.validation.Validator;
+import javax.servlet.http.HttpServletRequest;
 
 import com.ruoyi.common.config.RuoYiConfig;
+import com.ruoyi.common.utils.file.EvidenceFilePathUtils;
 import com.ruoyi.common.utils.file.FileUploadUtils;
+import com.ruoyi.common.utils.ServletUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -553,39 +556,50 @@ public class SysUserServiceImpl implements ISysUserService
         return successMsg.toString();
     }
 
+    /** 证明材料允许上传的文件类型。数据库字段仍沿用历史 pdfUrl/fileUrl 命名。 */
+    private static final String[] EVIDENCE_EXTENSIONS = { "pdf", "jpg", "jpeg", "png" };
+
     /**
-     * PDF文件上传核心逻辑
+     * 证明材料文件上传核心逻辑。
+     *
+     * PDF 和图片统一保存到当前环境的 profile/profile/pdf 目录，
+     * 文件访问地址使用当前请求的服务地址生成，避免写死本地或服务器地址。
      */
     @Override
     public String uploadPdf(MultipartFile file) throws Exception {
-        // 1. 校验文件是否为空
-        if (file.isEmpty()) {
+        if (file == null || file.isEmpty()) {
             throw new ServiceException("上传文件不能为空");
         }
 
-        // 2. 校验文件格式（仅允许PDF）
         String originalFilename = file.getOriginalFilename();
         String fileExt = StringUtils.substringAfterLast(originalFilename, ".");
-        if (!"pdf".equalsIgnoreCase(fileExt)) {
-            throw new ServiceException("仅支持PDF格式文件上传");
+        if (!StringUtils.inStringIgnoreCase(fileExt, EVIDENCE_EXTENSIONS)) {
+            throw new ServiceException("仅支持PDF、JPG、JPEG、PNG格式文件上传");
         }
 
-        // 3. 校验文件大小（限制10MB，与前端保持一致）
-        long fileSize = file.getSize();
-        if (fileSize > 100 * 1024 * 1024) { // 10MB = 10*1024*1024字节
-            throw new ServiceException("文件大小不能超过100MB");
+        String filePath = FileUploadUtils.upload(
+                RuoYiConfig.getProfile() + "/profile/pdf",
+                file,
+                EVIDENCE_EXTENSIONS,
+                true);
+        return buildResourceUrl(EvidenceFilePathUtils.normalizePublicPath(filePath));
+    }
+
+    /**
+     * 根据当前请求生成文件访问地址。本地开发和腾讯云部署只需改变访问入口，
+     * 不需要在代码中切换公网 IP 或操作系统路径。
+     */
+    private String buildResourceUrl(String filePath) {
+        try {
+            HttpServletRequest request = ServletUtils.getRequest();
+            String requestUrl = request.getRequestURL().toString();
+            String requestUri = request.getRequestURI();
+            String baseUrl = requestUrl.substring(0, requestUrl.length() - requestUri.length());
+            return baseUrl + filePath;
+        } catch (Exception ignored) {
+            // 非 Web 场景（例如单元测试）无法取得请求时，保留相对资源地址。
+            return filePath;
         }
-
-        // 4. 调用若依工具类保存文件（自动生成UUID文件名，避免重复）
-        // 保存路径：RuoYiConfig.getProfile() + "/pdf/"（若依配置的上传根目录下的pdf子目录）
-        String filePath = FileUploadUtils.upload(RuoYiConfig.getProfile() + "/profile/pdf", file);
-
-        // 5. 拼接文件访问URL（若依静态资源访问路径为 /profile/**）
-        // 例如：保存路径为 D:/ruoyi/uploadPath/pdf/xxx.pdf → 访问URL为 /profile/pdf/xxx.pdf
-//        String pdfUrl = Constants.RESOURCE_PREFIX + "/" + filePath;
-        String pdfUrl = "http://43.139.98.113:81" + filePath.substring("/profile".length());
-
-        return pdfUrl;
     }
 
     @Override

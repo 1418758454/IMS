@@ -79,7 +79,6 @@ public class ProctorServiceImpl extends ServiceImpl<ProctorMapper, Proctor> impl
 
 //        if(this.updateById(proctor)){
 //            // 更新总工作量
-//            proctorService.countTotalWorkload(proctor.getUserId(), proctor.getYear());
 //            return true;
 //        }
         return this.updateById(proctor);
@@ -109,48 +108,5 @@ public class ProctorServiceImpl extends ServiceImpl<ProctorMapper, Proctor> impl
     /**
      * 更新总工作量表中的监考模块工作量
      */
-    @Override
-    public double countTotalWorkload(Long userId, Integer year) {
-        // 查询用户当年所有监考记录
-        List<Proctor> allProctors = proctorMapper.selectList(
-                new QueryWrapper<Proctor>().eq("user_id", userId).eq("year", year)
-        );
 
-        // 查询用户当年已通过审核的监考记录
-        List<Proctor> confirmedProctors = proctorMapper.selectList(
-                new QueryWrapper<Proctor>().eq("user_id", userId).eq("year", year).eq("status", "已通过")
-        );
-
-        // 计算预计总工作量（累加全部数据）
-        double estimatedTotal = allProctors.stream()
-                .mapToDouble(proctor -> countWorkload(userId, proctor))
-                .sum();
-
-        // 计算已确认总工作量（只累加审核状态为"已通过"的数据）
-        double confirmedTotal = confirmedProctors.stream()
-                .mapToDouble(proctor -> countWorkload(userId, proctor))
-                .sum();
-
-        // 更新总工作量表（假设字段名为proctor_workload）
-        BasicInformation info = basicInformationService.getById(userId);
-        QueryWrapper<TeachingTotalWorkload> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId).eq("year", year);
-        TeachingTotalWorkload totalWorkloadEntity = teachingTotalWorkloadMapper.selectOne(queryWrapper);
-
-        if (totalWorkloadEntity == null) {
-            totalWorkloadEntity = new TeachingTotalWorkload();
-            totalWorkloadEntity.setUserId(BigDecimal.valueOf(userId));
-            totalWorkloadEntity.setUserName(info.getName());
-            totalWorkloadEntity.setYear(year);
-            totalWorkloadEntity.setProctorEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalWorkloadEntity.setProctorConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.insert(totalWorkloadEntity);
-        } else {
-            totalWorkloadEntity.setProctorEstimatedWorkload(BigDecimal.valueOf(estimatedTotal));
-            totalWorkloadEntity.setProctorConfirmedWorkload(BigDecimal.valueOf(confirmedTotal));
-            teachingTotalWorkloadMapper.update(totalWorkloadEntity, queryWrapper);
-        }
-
-        return 0;
-    }
 }

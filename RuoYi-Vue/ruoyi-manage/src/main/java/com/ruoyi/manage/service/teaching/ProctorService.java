@@ -51,7 +51,6 @@ public interface ProctorService extends IService<Proctor> {
      * @param year 年份
      * @return 总工作量
      */
-    double countTotalWorkload(Long userId, Integer year);
 
     IPage<Proctor> getProctorPageByUserIds(Integer pageNum, Integer pageSize, List<String> userIds, Integer year, Boolean isAudit);
 

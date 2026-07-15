@@ -106,8 +106,6 @@ public class SubjectServiceImpl extends ServiceImpl<SubjectMapper, ResearchSubje
 
         if(this.updateById(subject)){
             // 计算模块总工作量
-            countTotalConfirmedWorkload(subject.getUserId(), subject.getYear());
-            countTotalEstimatedWorkload(subject.getUserId(), subject.getYear());
             return true;
         }
         return false;
@@ -119,8 +117,6 @@ public class SubjectServiceImpl extends ServiceImpl<SubjectMapper, ResearchSubje
         // 新增课题，新增成功则更新总工作量表
         if(subjectMapper.insert(subject) > 0){
             // 计算模块总工作量
-            countTotalConfirmedWorkload(subject.getUserId(), subject.getYear());
-            countTotalEstimatedWorkload(subject.getUserId(), subject.getYear());
             return true;
         }
         return false;
@@ -153,8 +149,6 @@ public class SubjectServiceImpl extends ServiceImpl<SubjectMapper, ResearchSubje
         // 3. 删除数据库中的课题记录
         if(subjectMapper.deleteBatchIds(ids) > 0){
             // 计算模块总工作量
-            countTotalConfirmedWorkload(userId, year);
-            countTotalEstimatedWorkload(userId, year);
             return true;
         }
         return false;
@@ -165,101 +159,14 @@ public class SubjectServiceImpl extends ServiceImpl<SubjectMapper, ResearchSubje
     public boolean updateSubject(ResearchSubject subject) {
         if(subjectMapper.updateById(subject) > 0){
             // 计算模块总工作量
-            countTotalConfirmedWorkload(subject.getUserId(), subject.getYear());
-            countTotalEstimatedWorkload(subject.getUserId(), subject.getYear());
             return true;
         }
         return false;
 //        return subjectMapper.updateById(subject) > 0;
     }
 
-    @Override
-    public void countTotalConfirmedWorkload(Long userId, String year) {
-        QueryWrapper<ResearchSubject> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId);
-
-        // 按年份筛选
-        if (StringUtils.isNotBlank(year)) {
-            queryWrapper.eq("year", year);
-        }
-
-        // 只计算状态为"已通过"的记录
-        queryWrapper.eq("status", "已通过");
-
-        // 使用 MyBatis-Plus 的聚合查询计算工作量总和
-        List<ResearchSubject> confirmedSubjects = subjectMapper.selectList(queryWrapper);
-
-        // 计算总工作量
-        BigDecimal total = BigDecimal.ZERO;
-        for (ResearchSubject subject : confirmedSubjects) {
-            if (subject.getWorkload() != null) {
-                total = total.add(subject.getWorkload());
-            }
-        }
-
-        // 更新总工作量表
-        BasicInformation user = basicInformationService.getById(userId);
-        ResearchTotalWorkload totalWorkload = totalWorkloadMapper.selectOne(
-                new QueryWrapper<ResearchTotalWorkload>().eq("user_id", userId).eq("year", year)
-        );
-
-        if (totalWorkload == null) { //查看总表是否已有记录，没有就创建，有则更新
-            totalWorkload = new ResearchTotalWorkload();
-            totalWorkload.setUserId(BigDecimal.valueOf(userId));
-            totalWorkload.setUserName(user.getName());
-            totalWorkload.setYear(year);
-            totalWorkload.setSubjectConfirmedWorkload(total);
-            totalWorkloadMapper.insert(totalWorkload);
-        } else {
-            totalWorkload.setSubjectConfirmedWorkload(total);
-            totalWorkloadMapper.update(totalWorkload, new QueryWrapper<ResearchTotalWorkload>()
-                    .eq("user_id", userId).eq("year", year));
-        }
-//        subjectMapper.updateTotalWorkload(totalWorkload, userId, year);
-
-//        return totalWorkload;
-    }
-
-    @Override
-    public void countTotalEstimatedWorkload(Long userId, String year) {
-        QueryWrapper<ResearchSubject> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId);
-
-        // 按年份筛选
-        if (StringUtils.isNotBlank(year)) {
-            queryWrapper.eq("year", year);
-        }
 
 
-        // 使用 MyBatis-Plus 的聚合查询计算工作量总和
-        List<ResearchSubject> allSubjects  = subjectMapper.selectList(queryWrapper);
 
-        // 计算总工作量
-        BigDecimal total = BigDecimal.ZERO;
-        for (ResearchSubject subject : allSubjects ) {
-            if (subject.getWorkload() != null) {
-                total = total.add(subject.getWorkload());
-            }
-        }
-
-        // 更新总工作量表
-        BasicInformation user = basicInformationService.getById(userId);
-        ResearchTotalWorkload totalWorkload = totalWorkloadMapper.selectOne(
-                new QueryWrapper<ResearchTotalWorkload>().eq("user_id", userId).eq("year", year)
-        );
-
-        if (totalWorkload == null) { //查看总表是否已有记录，没有就创建，有则更新
-            totalWorkload = new ResearchTotalWorkload();
-            totalWorkload.setUserId(BigDecimal.valueOf(userId));
-            totalWorkload.setUserName(user.getName());
-            totalWorkload.setYear(year);
-            totalWorkload.setSubjectEstimatedWorkload(total);
-            totalWorkloadMapper.insert(totalWorkload);
-        } else {
-            totalWorkload.setSubjectEstimatedWorkload(total);
-            totalWorkloadMapper.update(totalWorkload, new QueryWrapper<ResearchTotalWorkload>()
-                    .eq("user_id", userId).eq("year", year));
-        }
-    }
 
 }

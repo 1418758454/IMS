@@ -58,26 +58,8 @@ public class TeachingTotalWorkloadServiceImpl extends ServiceImpl<TeachingTotalW
             totalWorkload.setGraduateGuideStudentConfirmedWorkload(BigDecimal.ZERO);
             totalWorkload.setTotalWorkload(BigDecimal.ZERO);
             return totalWorkload;
-        }else {
-            // 累加各项工作得到教学总工作量
-            BigDecimal total = BigDecimal.ZERO
-                    .add(totalWorkload.getTheoryCourseConfirmedWorkload() != null ? totalWorkload.getTheoryCourseConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getExperimentCourseConfirmedWorkload() != null ? totalWorkload.getExperimentCourseConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getPracticalTeachingConfirmedWorkload() != null ? totalWorkload.getPracticalTeachingConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getThesisCourseConfirmedWorkload() != null ? totalWorkload.getThesisCourseConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getScienceInnovationConfirmedWorkload() != null ? totalWorkload.getScienceInnovationConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getCompetitionConfirmedWorkload() != null ? totalWorkload.getCompetitionConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getTextbookConfirmedWorkload() != null ? totalWorkload.getTextbookConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getEducationReformConfirmedWorkload() != null ? totalWorkload.getEducationReformConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getEducationReformPaperConfirmedWorkload() != null ? totalWorkload.getEducationReformPaperConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getProctorConfirmedWorkload() != null ? totalWorkload.getProctorConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getGraduateTheoryCourseConfirmedWorkload() != null ? totalWorkload.getGraduateTheoryCourseConfirmedWorkload() : BigDecimal.ZERO)
-                    .add(totalWorkload.getGraduateGuideStudentConfirmedWorkload() != null ? totalWorkload.getGraduateGuideStudentConfirmedWorkload() : BigDecimal.ZERO);
-            totalWorkload.setTotalWorkload(total);
-            // 将总工作量写入数据库
-            teachingTotalWorkloadMapper.updateById(totalWorkload);
-            return totalWorkload;
         }
+        return totalWorkload;
 
     }
 
@@ -327,26 +309,8 @@ public class TeachingTotalWorkloadServiceImpl extends ServiceImpl<TeachingTotalW
                 totalWorkload.setGraduateGuideStudentConfirmedWorkload(BigDecimal.ZERO);
                 totalWorkload.setTotalWorkload(BigDecimal.ZERO);
                 return totalWorkload;
-            } else {
-                // 累加各项工作得到教学总工作量
-                BigDecimal total = BigDecimal.ZERO
-                        .add(totalWorkload.getTheoryCourseConfirmedWorkload() != null ? totalWorkload.getTheoryCourseConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getExperimentCourseConfirmedWorkload() != null ? totalWorkload.getExperimentCourseConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getPracticalTeachingConfirmedWorkload() != null ? totalWorkload.getPracticalTeachingConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getThesisCourseConfirmedWorkload() != null ? totalWorkload.getThesisCourseConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getScienceInnovationConfirmedWorkload() != null ? totalWorkload.getScienceInnovationConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getCompetitionConfirmedWorkload() != null ? totalWorkload.getCompetitionConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getTextbookConfirmedWorkload() != null ? totalWorkload.getTextbookConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getEducationReformConfirmedWorkload() != null ? totalWorkload.getEducationReformConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getEducationReformPaperConfirmedWorkload() != null ? totalWorkload.getEducationReformPaperConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getProctorConfirmedWorkload() != null ? totalWorkload.getProctorConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getGraduateTheoryCourseConfirmedWorkload() != null ? totalWorkload.getGraduateTheoryCourseConfirmedWorkload() : BigDecimal.ZERO)
-                        .add(totalWorkload.getGraduateGuideStudentConfirmedWorkload() != null ? totalWorkload.getGraduateGuideStudentConfirmedWorkload() : BigDecimal.ZERO);
-                totalWorkload.setTotalWorkload(total);
-                // 将总工作量写入数据库
-                teachingTotalWorkloadMapper.updateById(totalWorkload);
-                return totalWorkload;
             }
+            return totalWorkload;
         }
     }
 }
