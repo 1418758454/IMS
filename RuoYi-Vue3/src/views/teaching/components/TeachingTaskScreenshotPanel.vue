@@ -2,15 +2,16 @@
   <section class="task-screenshot-panel">
     <div class="task-screenshot-heading">
       <div>
-        <strong>个人教学任务截图（PDF）</strong>
+        <strong>个人教学任务截图（PDF/图片）</strong>
         <span v-if="hasAttachment" class="attachment-count">已上传 {{ attachments.length }} 份</span>
         <span v-else class="attachment-missing">尚未上传</span>
       </div>
       <el-upload
         v-if="editable"
+        v-evidence-file-opening
         :auto-upload="false"
         :show-file-list="false"
-        accept=".pdf"
+        accept=".pdf,.jpg,.jpeg,.png"
         :disabled="uploading"
         :on-change="handleFileChange"
       >
@@ -20,7 +21,7 @@
 
     <el-alert
       v-if="editable && !hasAttachment"
-      title="请先上传个人教学任务截图（PDF）后再新增课程"
+      title="请先上传个人教学任务截图（PDF/图片）后再新增课程"
       type="warning"
       :closable="false"
       show-icon
@@ -28,9 +29,7 @@
 
     <div v-loading="loading" class="attachment-list">
       <div v-for="attachment in attachments" :key="attachment.id" class="attachment-item">
-        <el-link :href="attachment.fileUrl" type="primary" target="_blank" :underline="false">
-          {{ attachment.fileName }}
-        </el-link>
+        <EvidenceFilePreview :url="attachment.fileUrl" :pdf-label="attachment.fileName" />
         <span class="attachment-time">{{ formatTime(attachment.createTime) }}</span>
         <el-button
           v-if="editable"
@@ -55,8 +54,7 @@ import {
   listTaskScreenshotAttachments,
   uploadTaskScreenshotAttachment
 } from '@/api/teaching/taskScreenshotAttachment';
-
-const MAX_FILE_SIZE = 100 * 1024 * 1024;
+import { validateEvidenceFile } from '@/utils/evidenceFile';
 
 export default {
   name: 'TeachingTaskScreenshotPanel',
@@ -123,13 +121,9 @@ export default {
     },
     async handleFileChange(file) {
       const rawFile = file.raw;
-      const isPdf = rawFile && (rawFile.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
-      if (!isPdf) {
-        ElMessage.error('仅支持PDF格式文件');
-        return;
-      }
-      if (rawFile.size > MAX_FILE_SIZE) {
-        ElMessage.error('文件大小不能超过100MB');
+      const errorMessage = validateEvidenceFile(rawFile);
+      if (errorMessage) {
+        ElMessage.error(errorMessage);
         return;
       }
 

@@ -123,7 +123,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="封面、目录及封底扫描件（PDF）" min-width="260" align="center">
+      <el-table-column label="封面、目录及封底扫描件（PDF/图片）" min-width="260" align="center">
         <template v-slot="scope">
           <TeachingPdfCell :row="scope.row" />
         </template>

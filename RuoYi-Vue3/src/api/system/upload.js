@@ -2,25 +2,18 @@
 import { ElMessage } from 'element-plus';
 import { reactive } from 'vue';
 import request from '@/utils/request'
+import { validateEvidenceFile } from '@/utils/evidenceFile';
 
 
 /**
- * 上传前验证PDF格式和大小
+ * 上传前验证证明材料格式和大小
  * @param {File} file - 上传文件对象
  * @returns {boolean} 是否通过验证
  */
 export const beforePdfUpload = (file) => {
-  // 验证文件类型
-  const isPDF = file.type === 'application/pdf';
-  if (!isPDF) {
-    ElMessage.error('仅支持PDF格式文件，请重新选择');
-    return false;
-  }
-
-  // 验证文件大小（20MB）
-  const isLt20M = file.size / 1024 / 1024 < 20;
-  if (!isLt20M) {
-    ElMessage.error('文件大小不能超过20MB，请压缩后上传');
+  const errorMessage = validateEvidenceFile(file);
+  if (errorMessage) {
+    ElMessage.error(errorMessage);
     return false;
   }
 
@@ -36,7 +29,7 @@ export const beforePdfUpload = (file) => {
 export function handlePdfUpload(response, file, fileList) {
   if (response.code === 200) {
     this.formData.pdfUrl = response.data.url;  // ✅ 正确读取后端返回的url字段
-    ElMessage.success(`文件上传成功: ${file.name}`);
+    ElMessage.success(`证明材料上传成功: ${file.name}`);
   } else {
     ElMessage.error(`上传失败: ${response.msg || '服务器错误'}`);
   }

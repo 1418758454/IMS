@@ -676,6 +676,10 @@ export default {
           this.$message.warning('请选择部门');
           return;
         }
+        if (!this.filterForm.userId) {
+          this.$message.warning('请选择用户');
+          return;
+        }
 
         await this.refreshAllModules();
         

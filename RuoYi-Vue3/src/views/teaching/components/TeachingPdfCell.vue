@@ -2,36 +2,30 @@
   <div class="teaching-pdf-cell">
     <el-upload
       v-if="row.isEditing"
+      v-evidence-file-opening
       class="teaching-pdf-upload"
       :auto-upload="false"
       :limit="1"
-      accept=".pdf"
+      accept=".pdf,.jpg,.jpeg,.png"
       :file-list="row._pdfFileList || []"
       :on-change="handleChange"
       :on-remove="handleRemove"
       :on-exceed="handleExceed"
     >
-      <el-button size="small" type="primary" icon="Upload">选择PDF</el-button>
+      <el-button size="small" type="primary" icon="Upload">选择证明材料</el-button>
       <template #tip>
-        <div class="el-upload__tip">仅支持单个PDF，不超过100MB</div>
+        <div class="el-upload__tip">支持PDF、JPG、JPEG、PNG，单个文件不超过100MB</div>
       </template>
     </el-upload>
 
-    <el-link
-      v-if="row.pdfUrl"
-      class="pdf-link"
-      type="primary"
-      :href="row.pdfUrl"
-      target="_blank"
-    >
-      查看PDF
-    </el-link>
+    <EvidenceFilePreview v-if="row.pdfUrl" :url="row.pdfUrl" />
     <span v-else-if="!row.isEditing">-</span>
   </div>
 </template>
 
 <script>
 import { ElMessage } from 'element-plus';
+import { validateEvidenceFile } from '@/utils/evidenceFile';
 
 export default {
   name: 'TeachingPdfCell',
@@ -51,16 +45,9 @@ export default {
     },
     handleChange(file, fileList) {
       const rawFile = file.raw;
-      const isPdf = rawFile && (rawFile.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
-      const isLt100M = rawFile && rawFile.size / 1024 / 1024 < 100;
-
-      if (!isPdf) {
-        this.showPdfMessage('仅支持PDF格式文件', 'error');
-        this.clearFile();
-        return;
-      }
-      if (!isLt100M) {
-        this.showPdfMessage('文件大小不能超过100MB', 'error');
+      const errorMessage = rawFile && validateEvidenceFile(rawFile);
+      if (errorMessage) {
+        this.showPdfMessage(errorMessage, 'error');
         this.clearFile();
         return;
       }
@@ -72,7 +59,7 @@ export default {
       this.clearFile();
     },
     handleExceed(files) {
-      this.showPdfMessage('只能上传一个PDF文件，请先移除当前文件');
+      this.showPdfMessage('只能上传一个证明材料文件，请先移除当前文件');
     },
     clearFile() {
       this.row._pdfFile = null;

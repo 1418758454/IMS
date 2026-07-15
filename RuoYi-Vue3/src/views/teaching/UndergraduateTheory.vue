@@ -43,9 +43,21 @@
         <template v-slot="scope"><span>{{ scope.row.userName }}</span></template>
       </el-table-column>
 
-      <el-table-column v-if="mode === 'check' || mode === 'search'" label="个人教学任务截图（PDF）" min-width="180" align="center">
+      <el-table-column v-if="mode === 'check' || mode === 'search'" label="个人教学任务截图（PDF/图片）" min-width="180" align="center">
         <template v-slot="scope">
-          <TeachingTaskScreenshotViewer :user-id="scope.row.userId" :year="scope.row.year" module-type="theory" />
+          <TeachingTaskScreenshotViewer
+            :user-id="scope.row.userId"
+            :year="scope.row.year"
+            module-type="theory"
+            :records="tableData"
+            :current-index="scope.$index"
+            :mode="mode"
+            @active-row-change="activeScreenshotRow = $event"
+            @audit="$emit('audit', $event, moduleKey)"
+            @reject="$emit('reject', $event, moduleKey)"
+            @edit="handleDrawerEdit"
+            @delete="handleDrawerDelete"
+          />
         </template>
       </el-table-column>
 
@@ -313,6 +325,7 @@ export default {
       remarkDialogVisible: false,
       currentRemark: '', // 当前显示的备注内容
       hasTaskScreenshot: false,
+      activeScreenshotRow: null,
     }; 
   },
   computed: {
@@ -347,6 +360,13 @@ export default {
     } 
   },
   methods: {
+    handleDrawerEdit(row) {
+      this.editRow(row);
+    },
+    handleDrawerDelete(row) {
+      const index = this.tableData.indexOf(row);
+      if (index !== -1) this.deleteRow(row.id, index);
+    },
     addRow() {
       this.tableData.push({
         id: null,
@@ -405,8 +425,9 @@ export default {
     },
     // 定义行类名回调函数
     tableRowClassName({ row, rowIndex }) { 
-      // 示例：实现斑马纹效果（偶数行添加自定义类名）
-      return rowIndex % 2 === 0 ? 'even-row' : ''; 
+      const classNames = rowIndex % 2 === 0 ? ['even-row'] : [];
+      if (this.activeScreenshotRow === row) classNames.push('screenshot-active-row');
+      return classNames.join(' '); 
     },
     
     /**
@@ -500,6 +521,11 @@ export default {
 
 :deep(.even-row) {
   background-color: #fafafa; /* 偶数行浅灰背景 */
+}
+
+:deep(.screenshot-active-row > td.el-table__cell) {
+  background-color: #eaf4ff !important;
+  box-shadow: inset 0 2px 0 #409eff, inset 0 -2px 0 #409eff;
 }
 
 /* 6. 工作量数值高亮 */

@@ -91,7 +91,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="证明材料（PDF）" min-width="180" align="center">
+      <el-table-column label="证明材料（PDF/图片）" min-width="180" align="center">
         <template v-slot="scope">
           <TeachingPdfCell :row="scope.row" />
         </template>

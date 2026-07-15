@@ -138,19 +138,9 @@
           <template v-slot="scope"><span>{{ scope.row.coefficient }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="立项合同（PDF）" align="center" width="160">
+        <el-table-column label="立项合同（PDF/图片）" align="center" width="160">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">
@@ -238,19 +228,9 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="论文原件（PDF）" align="center" width="160">
+        <el-table-column label="论文原件（PDF/图片）" align="center" width="160">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">
@@ -339,19 +319,9 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="封面、目录及封底扫描件（PDF）" align="center" width="260">
+        <el-table-column label="封面、目录及封底扫描件（PDF/图片）" align="center" width="260">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">
@@ -439,19 +409,9 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="证书（PDF）" align="center" width="120">
+        <el-table-column label="证书（PDF/图片）" align="center" width="120">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">
@@ -539,19 +499,9 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="证书（PDF）" align="center" width="120">
+        <el-table-column label="证书（PDF/图片）" align="center" width="120">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">
@@ -636,19 +586,9 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="证书（PDF）" align="center" width="120">
+        <el-table-column label="证书（PDF/图片）" align="center" width="120">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">

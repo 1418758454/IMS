@@ -25,7 +25,7 @@
               :value="year"
             ></el-option>
           </el-select>
-          <el-checkbox v-model="yearAllIncludePdf">包含PDF附件</el-checkbox>
+          <el-checkbox v-model="yearAllIncludePdf">包含证明材料附件</el-checkbox>
           <el-button
             type="warning"
             icon="Download"
@@ -128,7 +128,7 @@
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="筛选导出">
-              <el-checkbox v-model="filteredIncludePdf">包含PDF附件</el-checkbox>
+              <el-checkbox v-model="filteredIncludePdf">包含证明材料附件</el-checkbox>
               <el-button
                 type="success"
                 icon="Download"
@@ -790,13 +790,17 @@ export default {
           this.$message.warning('请选择部门');
           return;
         }
+        if (!this.filterForm.userId) {
+          this.$message.warning('请选择用户');
+          return;
+        }
 
         await this.refreshAllModules();
         // 新增：获取汇总数据
         await this.fetchTotalWorkload(
           this.filterForm.year,
           this.filterForm.deptId,
-          this.filterForm.userId || undefined
+          this.filterForm.userId
         );
         
         

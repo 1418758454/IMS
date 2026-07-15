@@ -43,9 +43,21 @@
         <template v-slot="scope"><span>{{ scope.row.userName }}</span></template>
       </el-table-column>
 
-      <el-table-column v-if="mode === 'check' || mode === 'search'" label="个人教学任务截图（PDF）" min-width="180" align="center">
+      <el-table-column v-if="mode === 'check' || mode === 'search'" label="个人教学任务截图（PDF/图片）" min-width="180" align="center">
         <template v-slot="scope">
-          <TeachingTaskScreenshotViewer :user-id="scope.row.userId" :year="scope.row.year" module-type="practice" />
+          <TeachingTaskScreenshotViewer
+            :user-id="scope.row.userId"
+            :year="scope.row.year"
+            module-type="practice"
+            :records="tableData"
+            :current-index="scope.$index"
+            :mode="mode"
+            @active-row-change="activeScreenshotRow = $event"
+            @audit="$emit('audit', $event, moduleKey)"
+            @reject="$emit('reject', $event, moduleKey)"
+            @edit="handleDrawerEdit"
+            @delete="handleDrawerDelete"
+          />
         </template>
       </el-table-column>
 
@@ -295,6 +307,7 @@ export default {
       remarkDialogVisible: false,
       currentRemark: '', // 当前显示的备注内容
       hasTaskScreenshot: false,
+      activeScreenshotRow: null,
     }; 
   },
   watch: { 
@@ -307,6 +320,13 @@ export default {
     } 
   },
   methods: {
+    handleDrawerEdit(row) {
+      this.editRow(row);
+    },
+    handleDrawerDelete(row) {
+      const index = this.tableData.indexOf(row);
+      if (index !== -1) this.deleteRow(row.id, index);
+    },
     // 新增行（与实验课逻辑一致，字段适配实践教学）
     addRow() {
       this.tableData.push({
@@ -380,7 +400,9 @@ export default {
 
     // 行样式（斑马纹，与实验课完全相同）
     tableRowClassName({ row, rowIndex }) { 
-      return rowIndex % 2 === 0 ? 'even-row' : ''; 
+      const classNames = rowIndex % 2 === 0 ? ['even-row'] : [];
+      if (this.activeScreenshotRow === row) classNames.push('screenshot-active-row');
+      return classNames.join(' '); 
     },
 
     /**
@@ -450,6 +472,11 @@ export default {
 }
 :deep(.even-row) {
   background-color: #fafafa;
+}
+
+:deep(.screenshot-active-row > td.el-table__cell) {
+  background-color: #eaf4ff !important;
+  box-shadow: inset 0 2px 0 #409eff, inset 0 -2px 0 #409eff;
 }
 .workload-value {
   color: #2c6ecb;

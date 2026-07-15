@@ -101,7 +101,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="结题证明/立项合同（PDF）" min-width="220" align="center">
+      <el-table-column label="结题证明/立项合同（PDF/图片）" min-width="220" align="center">
         <template v-slot="scope">
           <TeachingPdfCell :row="scope.row" />
         </template>

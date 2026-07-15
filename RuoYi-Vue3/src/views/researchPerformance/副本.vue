@@ -174,19 +174,9 @@
           <template v-slot="scope"><span>{{ scope.row.coefficient }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证明材料（PDF/图片）" align="center" width="100">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">
@@ -276,19 +266,9 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证明材料（PDF/图片）" align="center" width="100">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">
@@ -379,19 +359,9 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证明材料（PDF/图片）" align="center" width="100">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">
@@ -480,19 +450,9 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证明材料（PDF/图片）" align="center" width="100">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">
@@ -581,19 +541,9 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证明材料（PDF/图片）" align="center" width="100">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">
@@ -679,19 +629,9 @@
           <template v-slot="scope"><span>{{ scope.row.rank }}</span></template>
         </el-table-column>
         <!-- PDF列 -->
-        <el-table-column label="PDF" align="center" width="100">
+        <el-table-column label="证明材料（PDF/图片）" align="center" width="100">
           <template v-slot="scope">
-            <!-- 有PDF时显示查看链接，无则显示“无” -->
-            <el-link 
-              v-if="scope.row.pdfUrl" 
-              type="primary" 
-              icon="Document" 
-              :href="scope.row.pdfUrl" 
-              target="_blank"
-            >
-              查看
-            </el-link>
-            <span v-else>无</span>
+            <EvidenceFilePreview :url="scope.row.pdfUrl" />
           </template>
         </el-table-column>
         <el-table-column label="工作量" prop="workload" align="center">
@@ -798,7 +738,7 @@
             ></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="证明材料（PDF/图片）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"
@@ -810,14 +750,14 @@
               :on-error="handleUploadError"
               :on-remove="handleRemove"
               :limit="1"
-              accept=".pdf"
+              accept=".pdf,.jpg,.jpeg,.png"
               :auto-upload="false" 
               :on-change="handleFileChange" 
             >
-              <el-button size="small" type="primary" icon="Upload">选择PDF文件</el-button>
+              <el-button size="small" type="primary" icon="Upload">选择证明材料</el-button>
               <template #tip>
                 <div class="el-upload__tip text-danger">
-                  仅支持单个PDF文件，文件大小不超过100MB
+                  支持PDF、JPG、JPEG、PNG，文件大小不超过100MB
                 </div>
               </template>
             </el-upload>
@@ -857,7 +797,7 @@
             <el-input v-model="formData.rank" type="number" placeholder="请输入分配比例" step="0.01"></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="证明材料（PDF/图片）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"
@@ -869,14 +809,14 @@
               :on-error="handleUploadError"
               :on-remove="handleRemove"
               :limit="1"
-              accept=".pdf"
+              accept=".pdf,.jpg,.jpeg,.png"
               :auto-upload="false" 
               :on-change="handleFileChange" 
             >
-              <el-button size="small" type="primary" icon="Upload">选择PDF文件</el-button>
+              <el-button size="small" type="primary" icon="Upload">选择证明材料</el-button>
               <template #tip>
                 <div class="el-upload__tip text-danger">
-                  仅支持单个PDF文件，文件大小不超过100MB
+                  支持PDF、JPG、JPEG、PNG，文件大小不超过100MB
                 </div>
               </template>
             </el-upload>
@@ -915,7 +855,7 @@
             <el-input v-model="formData.rank" type="number" placeholder="请输入分配比例" step="0.01"></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="证明材料（PDF/图片）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"
@@ -927,14 +867,14 @@
               :on-error="handleUploadError"
               :on-remove="handleRemove"
               :limit="1"
-              accept=".pdf"
+              accept=".pdf,.jpg,.jpeg,.png"
               :auto-upload="false" 
               :on-change="handleFileChange" 
             >
-              <el-button size="small" type="primary" icon="Upload">选择PDF文件</el-button>
+              <el-button size="small" type="primary" icon="Upload">选择证明材料</el-button>
               <template #tip>
                 <div class="el-upload__tip text-danger">
-                  仅支持单个PDF文件，文件大小不超过100MB
+                  支持PDF、JPG、JPEG、PNG，文件大小不超过100MB
                 </div>
               </template>
             </el-upload>
@@ -977,7 +917,7 @@
             <el-input v-model="formData.rank" type="number" placeholder="请输入分配比例" step="0.01"></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="证明材料（PDF/图片）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"
@@ -989,14 +929,14 @@
               :on-error="handleUploadError"
               :on-remove="handleRemove"
               :limit="1"
-              accept=".pdf"
+              accept=".pdf,.jpg,.jpeg,.png"
               :auto-upload="false" 
               :on-change="handleFileChange" 
             >
-              <el-button size="small" type="primary" icon="Upload">选择PDF文件</el-button>
+              <el-button size="small" type="primary" icon="Upload">选择证明材料</el-button>
               <template #tip>
                 <div class="el-upload__tip text-danger">
-                  仅支持单个PDF文件，文件大小不超过100MB
+                  支持PDF、JPG、JPEG、PNG，文件大小不超过100MB
                 </div>
               </template>
             </el-upload>
@@ -1034,7 +974,7 @@
             <el-input v-model="formData.rank" type="number" placeholder="请输入分配比例" step="0.01"></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="证明材料（PDF/图片）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"
@@ -1046,14 +986,14 @@
               :on-error="handleUploadError"
               :on-remove="handleRemove"
               :limit="1"
-              accept=".pdf"
+              accept=".pdf,.jpg,.jpeg,.png"
               :auto-upload="false" 
               :on-change="handleFileChange" 
             >
-              <el-button size="small" type="primary" icon="Upload">选择PDF文件</el-button>
+              <el-button size="small" type="primary" icon="Upload">选择证明材料</el-button>
               <template #tip>
                 <div class="el-upload__tip text-danger">
-                  仅支持单个PDF文件，文件大小不超过100MB
+                  支持PDF、JPG、JPEG、PNG，文件大小不超过100MB
                 </div>
               </template>
             </el-upload>
@@ -1075,7 +1015,7 @@
             <el-input v-model="formData.rank" type="number" placeholder="请输入分配比例" step="0.01"></el-input>
           </el-form-item>
           <!-- PDF上传 -->
-          <el-form-item label="证明材料" prop="pdfUrl" required>
+          <el-form-item label="证明材料（PDF/图片）" prop="pdfUrl" required>
             <el-upload
               class="upload-pdf"
               ref="pdfUpload"
@@ -1087,14 +1027,14 @@
               :on-error="handleUploadError"
               :on-remove="handleRemove"
               :limit="1"
-              accept=".pdf"
+              accept=".pdf,.jpg,.jpeg,.png"
               :auto-upload="false" 
               :on-change="handleFileChange" 
             >
-              <el-button size="small" type="primary" icon="Upload">选择PDF文件</el-button>
+              <el-button size="small" type="primary" icon="Upload">选择证明材料</el-button>
               <template #tip>
                 <div class="el-upload__tip text-danger">
-                  仅支持单个PDF文件，文件大小不超过100MB
+                  支持PDF、JPG、JPEG、PNG，文件大小不超过100MB
                 </div>
               </template>
             </el-upload>
@@ -1340,7 +1280,7 @@ export default {
           ],
           rank: [{ required: true, message: '请输入分配比例', trigger: 'blur' }],
           coefficient: [{ required: true, message: '请选择系数', trigger: 'change' }],
-          pdfUrl: [{ required: true, message: '请上传PDF文件', trigger: 'change' }],
+          pdfUrl: [{ required: true, message: '请上传PDF或图片文件', trigger: 'change' }],
 
         },
         // 论文模块验证规则
@@ -1350,7 +1290,7 @@ export default {
           publishTime: [{ required: true, message: '请选择出版时间', trigger: 'change' }],
           level: [{ required: true, message: '请选择论文级别', trigger: 'change' }],
           rank: [{ required: true, message: '请输入业绩点分配比例', trigger: 'blur' }],
-          pdfUrl: [{ required: true, message: '请上传PDF文件', trigger: 'change' }],
+          pdfUrl: [{ required: true, message: '请上传PDF或图片文件', trigger: 'change' }],
         },
         // 论著模块验证规则
         monograph: {
@@ -1358,7 +1298,7 @@ export default {
           publisher: [{ required: true, message: '请输入出版社', trigger: 'blur' }],
           publishTime: [{ required: true, message: '请选择出版时间', trigger: 'change' }],
           rank: [{ required: true, message: '请输入业绩点分配比例', trigger: 'blur' }],
-          pdfUrl: [{ required: true, message: '请上传PDF文件', trigger: 'change' }],
+          pdfUrl: [{ required: true, message: '请上传PDF或图片文件', trigger: 'change' }],
         },
         // 获奖模块验证规则
         award: {
@@ -1367,7 +1307,7 @@ export default {
           awardTime: [{ required: true, message: '请选择获奖时间', trigger: 'change' }],
           level: [{ required: true, message: '请选择奖励级别', trigger: 'change' }],
           rank: [{ required: true, message: '请输入业绩点分配比例', trigger: 'blur' }],
-          pdfUrl: [{ required: true, message: '请上传PDF文件', trigger: 'change' }],
+          pdfUrl: [{ required: true, message: '请上传PDF或图片文件', trigger: 'change' }],
         },
         // 专利模块验证规则
         patent: {
@@ -1376,7 +1316,7 @@ export default {
           applyTime: [{ required: true, message: '请选择申请时间', trigger: 'change' }],
           authorizeTime: [{ required: true, message: '请选择授权时间', trigger: 'change' }],
           rank: [{ required: true, message: '请输入业绩点分配比例', trigger: 'blur' }],
-          pdfUrl: [{ required: true, message: '请上传PDF文件', trigger: 'change' }],
+          pdfUrl: [{ required: true, message: '请上传PDF或图片文件', trigger: 'change' }],
         },
         // 软著模块验证规则
         software: {
@@ -1384,7 +1324,7 @@ export default {
           applyTime: [{ required: true, message: '请选择申请时间', trigger: 'change' }],
           authorizeTime: [{ required: true, message: '请选择授权时间', trigger: 'change' }],
           rank: [{ required: true, message: '请输入业绩点分配比例', trigger: 'blur' }],
-          pdfUrl: [{ required: true, message: '请上传PDF文件', trigger: 'change' }],
+          pdfUrl: [{ required: true, message: '请上传PDF或图片文件', trigger: 'change' }],
         }
       },
       // 退回修改弹窗相关
@@ -1557,11 +1497,12 @@ export default {
      */
     beforePdfUpload(file) {
       // 1. 严格PDF格式校验（MIME类型+文件后缀）
-      const isPDF = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+      const extension = file.name.split('.').pop().toLowerCase();
+      const isPDF = ['pdf', 'jpg', 'jpeg', 'png'].includes(extension);
       // 2. 大小限制调整为100MB（与后端统一）
       const isLt10M = file.size / 1024 / 1024 < 100;
   
-      if (!isPDF) this.$message.error('仅支持PDF格式文件！');
+      if (!isPDF) this.$message.error('仅支持PDF、JPG、JPEG、PNG格式文件！');
       if (!isLt10M) this.$message.error('文件大小不能超过100MB！');
       
       return isPDF && isLt10M; // 校验通过才允许上传
@@ -1569,12 +1510,13 @@ export default {
 
     handleFileChange(file, fileList) {
       // 1. 格式校验（PDF）
-      const isPDF = file.raw.type === 'application/pdf' || file.name.endsWith('.pdf');
+      const extension = file.name.split('.').pop().toLowerCase();
+      const isPDF = ['pdf', 'jpg', 'jpeg', 'png'].includes(extension);
       // 2. 大小校验（100MB）
       const isLt10M = file.size / 1024 / 1024 < 100;
 
       if (!isPDF || !isLt10M) {
-        this.$message.error(!isPDF ? '仅支持PDF格式文件！' : '文件大小不能超过100MB！');
+        this.$message.error(!isPDF ? '仅支持PDF、JPG、JPEG、PNG格式文件！' : '文件大小不能超过100MB！');
         this.fileList = []; // 清空错误文件
         this.fileValidated = false; // 标记校验失败
       } else {
@@ -1843,7 +1785,7 @@ export default {
     async submitForm() {
       // 步骤1：检查文件是否已选择且校验通过
       if (this.fileList.length === 0 || !this.fileValidated) {
-        this.$message.error('请选择并上传通过校验的PDF文件');
+        this.$message.error('请选择并上传通过校验的PDF或图片文件');
         return;
       }
     
